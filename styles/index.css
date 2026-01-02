@@ -1,0 +1,8 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-border: rgb(143 161 185 / 0.3);
+  --color-border-dark: #23272f;
+}
+
+@variant dark (&:where(.dark, .dark *));

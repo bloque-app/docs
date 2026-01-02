@@ -1,0 +1,12 @@
+[
+  {
+    "text": "SDK",
+    "link": "/sdk/guide/start/introduction",
+    "activeMatch": "/sdk/guide/"
+  },
+  {
+    "text": "Payment",
+    "link": "/pay/guide/start/introduction",
+    "activeMatch": "/pay/guide/"
+  }
+]
