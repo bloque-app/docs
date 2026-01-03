@@ -5,6 +5,7 @@
   "scripts": {
     "build": "rspress build",
     "dev": "rspress dev",
+    "sync-docs": "bun run ./scripts/sync-docs.ts docs",
     "preview": "rspress preview",
     "deploy": "wrangler pages deploy --branch=main"
   },
