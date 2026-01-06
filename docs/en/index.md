@@ -12,6 +12,9 @@ hero:
     - theme: brand
       text: Explore SDK
       link: /sdk
+    - theme: alt
+      text: Explore Payment
+      link: ./pay
   image:
     src: /bloque-icon.png
     alt: Bloque Logo

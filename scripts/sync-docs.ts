@@ -10,6 +10,10 @@ const REPOS = [
     repo: 'https://github.com/bloque-app/sdk.git',
     slug: 'sdk',
   },
+  {
+    repo: 'https://github.com/bloque-app/payments.git',
+    slug: 'pay',
+  },
 ];
 
 const SOURCE_ROOT = 'website';
