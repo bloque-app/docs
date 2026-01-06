@@ -22,8 +22,8 @@ export const ToolStack: React.FC = memo(() => {
         ? 'Complete payment gateway to process transactions securely and efficiently'
         : 'Pasarela de pagos completa para procesar transacciones de forma segura y eficiente',
       logo: '💰',
-      url: '/payment',
-      urlText: 'docs/payment',
+      url: '/pay',
+      urlText: 'docs/pay',
     },
   ];
 
