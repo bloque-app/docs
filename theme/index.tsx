@@ -1,17 +1,36 @@
+import { useLang } from '@rspress/core/runtime';
 import {
-  HomeLayout as BasicHomeLayout
+  Banner,
+  HomeLayout as BasicHomeLayout,
+  Layout as BasicLayout,
 } from '@rspress/core/theme-original';
+import { NavIcon } from '@rstack-dev/doc-ui/nav-icon';
 import { Tag } from './components/Tag';
 import { ToolStack } from './components/tool-stack';
 
 function HomeLayout() {
-  return (
-    <BasicHomeLayout
-      afterFeatures={<ToolStack />}
-    />
-  );
+  return <BasicHomeLayout afterFeatures={<ToolStack />} />;
 }
 
-export * from '@rspress/core/theme-original';
-export { HomeLayout, Tag };
+const Layout = () => {
+  const lang = useLang();
 
+  return (
+    <BasicLayout
+      beforeNavTitle={<NavIcon />}
+      beforeNav={
+        <Banner
+          href="/"
+          message={
+            lang === 'en'
+              ? '🚧 Bloque documentation is under development'
+              : '🚧 La documentacion de Bloque está en desarrollo'
+          }
+        />
+      }
+    />
+  );
+};
+
+export * from '@rspress/core/theme-original';
+export { HomeLayout, Layout, Tag };
