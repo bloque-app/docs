@@ -5,6 +5,7 @@ import {
   Layout as BasicLayout,
 } from '@rspress/core/theme-original';
 import { NavIcon } from '@rstack-dev/doc-ui/nav-icon';
+import { CheckoutCustomizer } from './components/checkout-customizer';
 import { Tag } from './components/Tag';
 import { ToolStack } from './components/tool-stack';
 
@@ -33,4 +34,4 @@ const Layout = () => {
 };
 
 export * from '@rspress/core/theme-original';
-export { HomeLayout, Layout, Tag };
+export { CheckoutCustomizer, HomeLayout, Layout, Tag };
