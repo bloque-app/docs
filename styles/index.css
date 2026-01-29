@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './mermaid.css';
 
 @theme {
   --color-border: rgb(143 161 185 / 0.3);
