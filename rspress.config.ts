@@ -1,7 +1,8 @@
+import * as path from 'node:path';
 import { defineConfig } from '@rspress/core';
 import { pluginPreview } from '@rspress/plugin-preview';
 import { pluginSitemap } from '@rspress/plugin-sitemap';
-import * as path from 'node:path';
+import { pluginMermaid } from './plugins/plugin-mermaid';
 
 const PUBLISH_URL = 'https://docs.bloque.app';
 
@@ -25,6 +26,9 @@ export default defineConfig({
     }),
     pluginSitemap({
       siteUrl: PUBLISH_URL,
+    }),
+    pluginMermaid({
+      theme: 'default',
     }),
   ],
   route: {
