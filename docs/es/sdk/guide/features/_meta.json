@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "api-reference",
+    "label": "Referencia de API"
+  },
+  {
+    "type": "file",
+    "name": "compliance",
+    "label": "Compliance"
+  },
+  {
+    "type": "file",
+    "name": "organizations",
+    "label": "Organizations"
+  },
+  {
+    "type": "file",
+    "name": "swap",
+    "label": "Swap (Entrada y Salida de Fondos)"
+  },
+  {
+    "type": "dir",
+    "name": "state-machines",
+    "label": "State Machines"
+  }
+]

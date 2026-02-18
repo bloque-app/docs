@@ -1,0 +1,293 @@
+# Customization
+
+Customize the appearance of the `BloqueCheckout` component to match your brand.
+
+## Appearance Configuration
+
+Use the `appearance` prop to customize colors, borders, and fonts:
+
+```tsx
+import { BloqueCheckout } from '@bloque/payments-react';
+
+<BloqueCheckout
+  checkoutId={checkoutId}
+  appearance={{
+    primaryColor: '#10b981',
+    borderRadius: '12px',
+    fontFamily: 'Inter, system-ui, sans-serif',
+  }}
+  onSuccess={handleSuccess}
+/>
+```
+
+## Available Options
+
+### `primaryColor`
+
+Sets the primary brand color for buttons, links, and active states.
+
+```tsx
+appearance={{
+  primaryColor: '#10b981',  // Green
+}}
+```
+
+**Examples:**
+```tsx
+// Blue
+primaryColor: '#3b82f6'
+
+// Purple
+primaryColor: '#8b5cf6'
+
+// Red
+primaryColor: '#ef4444'
+
+// Custom brand color
+primaryColor: '#FF6B6B'
+```
+
+### `borderRadius`
+
+Controls the roundness of inputs, buttons, and containers.
+
+```tsx
+appearance={{
+  borderRadius: '12px',
+}}
+```
+
+**Examples:**
+```tsx
+// Sharp corners
+borderRadius: '0px'
+
+// Slightly rounded
+borderRadius: '4px'
+
+// Moderately rounded (default)
+borderRadius: '8px'
+
+// Very rounded
+borderRadius: '16px'
+
+// Pill-shaped
+borderRadius: '9999px'
+```
+
+### `fontFamily`
+
+Sets the font family for all text.
+
+```tsx
+appearance={{
+  fontFamily: 'Inter, system-ui, sans-serif',
+}}
+```
+
+**Examples:**
+```tsx
+// System fonts
+fontFamily: 'system-ui, -apple-system, sans-serif'
+
+// Google Fonts
+fontFamily: "'Poppins', sans-serif"
+
+// Custom fonts
+fontFamily: "'YourFont', 'Fallback', sans-serif"
+```
+
+## Complete Example
+
+```tsx
+import { BloqueCheckout } from '@bloque/payments-react';
+
+function CheckoutPage() {
+  const appearance = {
+    primaryColor: '#6366f1',           // Indigo
+    borderRadius: '16px',               // Rounded
+    fontFamily: "'Inter', sans-serif",  // Inter font
+  };
+
+  return (
+    <BloqueCheckout
+      checkoutId={checkoutId}
+      appearance={appearance}
+      onSuccess={handleSuccess}
+    />
+  );
+}
+```
+
+## Payment Options
+
+### `showInstallments`
+
+Enable installment payment options in the checkout:
+
+```tsx
+<BloqueCheckout
+  checkoutId={checkoutId}
+  showInstallments
+  onSuccess={handleSuccess}
+/>
+```
+
+When enabled, users will see available installment plans during checkout.
+
+## Iframe Styling
+
+For more advanced styling of the iframe container, use the `iframeStyles` prop:
+
+```tsx
+<BloqueCheckout
+  checkoutId={checkoutId}
+  appearance={appearance}
+  iframeStyles={{
+    height: '700px',
+    borderRadius: '16px',
+    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+  }}
+  onSuccess={handleSuccess}
+/>
+```
+
+## CSS Customization
+
+For container styling, use the `className` prop:
+
+```tsx
+<BloqueCheckout
+  checkoutId={checkoutId}
+  appearance={appearance}
+  className="custom-checkout"
+  onSuccess={handleSuccess}
+/>
+```
+
+Then add custom CSS:
+
+```css
+.custom-checkout {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: white;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+```
+
+## Inline Styles
+
+Use the `style` prop for inline styles on the container:
+
+```tsx
+<BloqueCheckout
+  checkoutId={checkoutId}
+  appearance={appearance}
+  style={{
+    maxWidth: '600px',
+    margin: '0 auto',
+    padding: '2rem',
+    backgroundColor: '#ffffff',
+    borderRadius: '8px',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+  }}
+  onSuccess={handleSuccess}
+/>
+```
+
+## Brand Examples
+
+### Modern Tech Startup
+
+```tsx
+<BloqueCheckout
+  checkoutId={checkoutId}
+  appearance={{
+    primaryColor: '#6366f1',
+    borderRadius: '12px',
+    fontFamily: "'Inter', system-ui, sans-serif",
+  }}
+  onSuccess={handleSuccess}
+/>
+```
+
+### E-commerce Store
+
+```tsx
+<BloqueCheckout
+  checkoutId={checkoutId}
+  appearance={{
+    primaryColor: '#f59e0b',
+    borderRadius: '8px',
+    fontFamily: "'Poppins', sans-serif",
+  }}
+  onSuccess={handleSuccess}
+/>
+```
+
+### Financial Services
+
+```tsx
+<BloqueCheckout
+  checkoutId={checkoutId}
+  appearance={{
+    primaryColor: '#0f766e',
+    borderRadius: '4px',
+    fontFamily: "'IBM Plex Sans', sans-serif",
+  }}
+  onSuccess={handleSuccess}
+/>
+```
+
+### Creative Agency
+
+```tsx
+<BloqueCheckout
+  checkoutId={checkoutId}
+  appearance={{
+    primaryColor: '#ec4899',
+    borderRadius: '24px',
+    fontFamily: "'Quicksand', sans-serif",
+  }}
+  onSuccess={handleSuccess}
+/>
+```
+
+## Dynamic Theming
+
+Change appearance based on user preferences:
+
+```tsx
+import { useState } from 'react';
+import { BloqueCheckout } from '@bloque/payments-react';
+
+function CheckoutPage({ checkoutId }) {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  const appearance = {
+    primaryColor: theme === 'light' ? '#3b82f6' : '#60a5fa',
+    borderRadius: '12px',
+    fontFamily: "'Inter', sans-serif",
+  };
+
+  return (
+    <div style={{ background: theme === 'dark' ? '#1f2937' : '#ffffff' }}>
+      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+        Toggle Theme
+      </button>
+      <BloqueCheckout
+        checkoutId={checkoutId}
+        appearance={appearance}
+        onSuccess={handleSuccess}
+      />
+    </div>
+  );
+}
+```
+
+## Next Steps
+
+- [React Integration](/pay/guide/react/basic-setup) - Learn basic setup
+- [Checkout API](/pay/guide/checkout/overview) - Create hosted checkout pages

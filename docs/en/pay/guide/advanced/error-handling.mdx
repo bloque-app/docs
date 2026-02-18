@@ -1,0 +1,158 @@
+# Error Handling
+
+Learn how to handle errors gracefully in Bloque Payments.
+
+## Error Types
+
+Bloque Payments can return different types of errors:
+
+- **Validation errors**: Invalid input data
+- **Authentication errors**: Invalid or missing access token
+- **Payment errors**: Payment processing failures
+- **Network errors**: Connection issues
+
+## Frontend Error Handling
+
+Use the `onError` callback to handle errors in the React component:
+
+```tsx
+import { init, BloqueCheckout } from '@bloque/payments-react';
+
+init({
+  publicApiKey: 'pk_live_...',
+  mode: 'production',
+});
+
+function CheckoutPage({ checkoutId }) {
+  return (
+    <BloqueCheckout
+      checkoutId={checkoutId}
+      onSuccess={(data) => {
+        console.log('Payment successful!', data.payment_id);
+        window.location.href = '/success';
+      }}
+      onError={(error) => {
+        console.error('Payment failed:', error);
+
+        // Show user-friendly message
+        alert(`Payment failed: ${error}`);
+      }}
+      onPending={(data) => {
+        console.log('Payment pending:', data.payment_id);
+        window.location.href = '/pending';
+      }}
+    />
+  );
+}
+```
+
+## Backend Error Handling
+
+Handle errors when creating checkouts:
+
+```typescript
+import { Bloque } from '@bloque/payments';
+import express from 'express';
+
+const app = express();
+app.use(express.json());
+
+const bloque = new Bloque({
+  accessToken: process.env.BLOQUE_ACCESS_TOKEN!,
+  mode: 'production',
+});
+
+app.post('/api/create-checkout', async (req, res) => {
+  try {
+    const checkout = await bloque.checkout.create({
+      name: req.body.name,
+      items: req.body.items,
+      success_url: req.body.success_url,
+    });
+
+    res.json({ id: checkout.id, url: checkout.url });
+  } catch (error) {
+    console.error('Checkout error:', error);
+
+    // Determine error type
+    if (error.status === 400) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid checkout data',
+        message: error.message,
+      });
+    }
+
+    if (error.status === 401) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Invalid access token',
+      });
+    }
+
+    // Generic error
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+    });
+  }
+});
+
+app.listen(3000);
+```
+
+## Common Error Codes
+
+### Card Errors
+
+- `card_declined`: Card was declined
+- `insufficient_funds`: Not enough funds
+- `invalid_card_number`: Invalid card number
+- `invalid_expiry`: Invalid expiration date
+- `invalid_cvv`: Invalid security code
+
+### General Errors
+
+- `invalid_amount`: Invalid payment amount
+- `invalid_currency`: Unsupported currency
+- `expired_checkout`: Checkout session expired
+
+## User-Friendly Messages
+
+Provide clear, actionable error messages:
+
+```typescript
+function getErrorMessage(errorCode: string): string {
+  switch (errorCode) {
+    case 'card_declined':
+      return 'Your card was declined. Please try another payment method or contact your bank.';
+
+    case 'insufficient_funds':
+      return 'Your card has insufficient funds. Please try another card.';
+
+    case 'invalid_card_number':
+      return 'The card number you entered is invalid. Please check and try again.';
+
+    case 'expired_card':
+      return 'Your card has expired. Please use a different card.';
+
+    case 'invalid_cvv':
+      return 'The security code (CVV) you entered is invalid.';
+
+    case 'bank_unavailable':
+      return 'The selected bank is temporarily unavailable. Please try again later.';
+
+    case 'expired_checkout':
+      return 'The payment session has expired. Please start a new one.';
+
+    default:
+      return 'Payment failed. Please try again or contact support.';
+  }
+}
+```
+
+## Next Steps
+
+- [Webhooks](/pay/guide/webhooks/setup) - Handle payment events
+- [Payment Methods](/pay/guide/payments/methods) - Learn about payment methods

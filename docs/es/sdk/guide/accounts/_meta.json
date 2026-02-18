@@ -1,0 +1,37 @@
+[
+  {
+    "type": "file",
+    "name": "overview",
+    "label": "Descripción general"
+  },
+  {
+    "type": "file",
+    "name": "virtual",
+    "label": "Cuentas Virtuales"
+  },
+  {
+    "type": "file",
+    "name": "us",
+    "label": "Cuentas US (Bridge)"
+  },
+  {
+    "type": "file",
+    "name": "polygon",
+    "label": "Polygon"
+  },
+  {
+    "type": "file",
+    "name": "cards",
+    "label": "Tarjetas Virtuales"
+  },
+  {
+    "type": "file",
+    "name": "bancolombia",
+    "label": "Bancolombia"
+  },
+  {
+    "type": "file",
+    "name": "transfers",
+    "label": "Transferencias"
+  }
+]

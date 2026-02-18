@@ -1,0 +1,201 @@
+# Payment Methods
+
+Bloque Payments supports multiple payment methods to process transactions securely.
+
+## Available Payment Methods
+
+### Card Payments (`card`)
+
+Accept credit and debit card payments from major card networks.
+
+**Supported Cards:**
+- Visa
+- Mastercard
+- American Express
+- Diners Club
+
+**Features:**
+- Real-time authorization
+- 3D Secure support
+- Automatic card validation
+- CVV verification
+
+### PSE (`pse`)
+
+Accept bank transfer payments in Colombia through PSE (Pagos Seguros en Línea).
+
+**Features:**
+- Direct bank transfer
+- Available for all banks in Colombia
+- Real-time or pending confirmation depending on the bank
+- No credit card required
+
+## How It Works
+
+Payment methods are handled automatically through Bloque's hosted checkout. Your integration flow is simple:
+
+```
+1. Your backend creates a checkout session
+   ↓
+2. Backend receives checkout_id
+   ↓
+3. Pass checkout_id to BloqueCheckout component
+   ↓
+4. Component renders iframe with hosted checkout
+   ↓
+5. User enters card details and completes payment
+   ↓
+6. onSuccess/onError callbacks are triggered
+```
+
+## Integration
+
+### Backend (Create Checkout)
+
+```typescript
+import { Bloque } from '@bloque/payments';
+
+const bloque = new Bloque({
+  accessToken: process.env.BLOQUE_ACCESS_TOKEN!,
+  mode: 'production',
+});
+
+const checkout = await bloque.checkout.create({
+  name: 'My Product',
+  description: 'Product description',
+  items: [
+    {
+      name: 'Product',
+      amount: 2999,
+      quantity: 1,
+    },
+  ],
+  success_url: 'https://yourapp.com/success',
+});
+
+// Send checkout.id to frontend
+res.json({ id: checkout.id });
+```
+
+### Frontend (React)
+
+```tsx
+import { init, BloqueCheckout } from '@bloque/payments-react';
+
+init({
+  publicApiKey: 'pk_live_...',
+  mode: 'production',
+});
+
+interface CheckoutPageProps {
+  // checkoutId is generated on the backend using @bloque/payments
+  checkoutId: string;
+}
+
+function CheckoutPage({ checkoutId }: CheckoutPageProps) {
+  return (
+    <BloqueCheckout
+      checkoutId={checkoutId}
+      onSuccess={(data) => {
+        console.log('Payment successful!', data.payment_id);
+        window.location.href = '/success';
+      }}
+      onError={(error) => {
+        console.error('Payment failed:', error);
+      }}
+    />
+  );
+}
+```
+
+## Filter Payment Methods
+
+You can control which payment methods are displayed in the checkout using the `paymentMethods` prop:
+
+```tsx
+// Card only (default)
+<BloqueCheckout
+  checkoutId={checkoutId}
+  paymentMethods={['card']}
+  onSuccess={handleSuccess}
+/>
+
+// PSE only
+<BloqueCheckout
+  checkoutId={checkoutId}
+  paymentMethods={['pse']}
+  onSuccess={handleSuccess}
+/>
+
+// Both methods
+<BloqueCheckout
+  checkoutId={checkoutId}
+  paymentMethods={['card', 'pse']}
+  onSuccess={handleSuccess}
+/>
+```
+
+| Value | Description |
+|-------|-------------|
+| `card` | Credit/debit card payment |
+| `pse` | PSE payment (bank transfer Colombia) |
+
+:::tip
+If you don't specify `paymentMethods`, only card payment will be shown by default (`['card']`).
+:::
+
+## Card Payment Flow
+
+1. User selects card payment in hosted checkout
+2. User enters card details
+3. Real-time authorization is processed
+4. `onSuccess` or `onError` callback is triggered
+
+## PSE Payment Flow
+
+1. User selects PSE in hosted checkout
+2. User selects their bank
+3. User is redirected to their bank's portal
+4. User completes the transfer at their bank
+5. `onSuccess`, `onPending` or `onError` callback is triggered
+
+:::info
+PSE payments may remain in `pending` status while the bank processes the transfer. Use webhooks to receive the final payment confirmation.
+:::
+
+## Handling Payment Responses
+
+The `BloqueCheckout` component provides callbacks for different outcomes:
+
+```tsx
+<BloqueCheckout
+  checkoutId={checkoutId}
+  onReady={() => {
+    console.log('Checkout ready');
+  }}
+  onSuccess={(data) => {
+    console.log('Payment ID:', data.payment_id);
+    console.log('Status:', data.status);
+    console.log('Amount:', data.amount);
+    console.log('Currency:', data.currency);
+    window.location.href = '/success';
+  }}
+  onError={(error) => {
+    console.error('Error:', error);
+  }}
+/>
+```
+
+## Security
+
+Card payments are processed securely:
+
+- **PCI-DSS compliant**: Card data never touches your servers
+- **3D Secure**: Additional authentication layer for secure transactions
+- **Encryption**: End-to-end encryption for all sensitive data
+
+## Next Steps
+
+- [React Integration](/pay/guide/react/basic-setup) - Set up the BloqueCheckout component
+- [Webhooks](/pay/guide/webhooks/setup) - Handle payment notifications
+- [Error Handling](/pay/guide/advanced/error-handling) - Handle payment errors

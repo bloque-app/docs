@@ -1,7 +1,7 @@
 This directory is generated at deploy time.
 
 Source repository: https://github.com/bloque-app/payments.git
-Language: es
+Language: en
 
 Its contents are not versioned and may be overwritten on each deployment.
 Do not modify files or folders manually.

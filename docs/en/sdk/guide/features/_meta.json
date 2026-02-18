@@ -1,0 +1,14 @@
+[
+  {
+    "type": "file",
+    "name": "api-reference",
+    "label": "API Reference"
+  },
+  "compliance",
+  "organizations",
+  {
+    "type": "file",
+    "name": "swap",
+    "label": "Swap (Payin & Payout)"
+  }
+]
