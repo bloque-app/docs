@@ -7,6 +7,7 @@ type Product = {
   description: string;
   defaultMediums: string[];
   scope: string[];
+  relevantPluginIds: string[];
 };
 
 type Medium = {
@@ -80,6 +81,7 @@ type Copy = {
   code: {
     title: string;
     description: string;
+    descriptionNoCard: string;
     copy: string;
     copied: string;
     step: string;
@@ -117,6 +119,7 @@ const products: Product[] = [
       'Create one shared balance with pockets',
       'Show balance, activity, and available payment methods',
     ],
+    relevantPluginIds: ['card', 'breb', 'polygon'],
   },
   {
     id: 'card-program',
@@ -129,6 +132,7 @@ const products: Product[] = [
       'Issue a virtual card connected to one ledger',
       'Configure spending controls and transaction webhooks',
     ],
+    relevantPluginIds: ['card', 'polygon', 'us-account'],
   },
   {
     id: 'merchant-payouts',
@@ -141,6 +145,7 @@ const products: Product[] = [
       'Attach Bre-B and Polygon to the same ledger',
       'Track payout status and reconciliation events',
     ],
+    relevantPluginIds: ['breb', 'polygon', 'pix-account', 'us-account', 'mexico-account', 'europe-account'],
   },
 ];
 
@@ -179,6 +184,8 @@ const copyByLocale: Record<Locale, Copy> = {
       title: 'Build from the code.',
       description:
         'Install the SDK, create the card, attach account plugins, then move money.',
+      descriptionNoCard:
+        'Install the SDK, set up the account, attach plugins, then move money.',
       copy: 'Copy',
       copied: 'Copied',
       step: 'Step',
@@ -239,6 +246,8 @@ const copyByLocale: Record<Locale, Copy> = {
       title: 'Construye desde el codigo.',
       description:
         'Instala el SDK, crea la tarjeta, agrega cuentas y luego mueve dinero.',
+      descriptionNoCard:
+        'Instala el SDK, configura la cuenta, agrega plugins y luego mueve dinero.',
       copy: 'Copiar',
       copied: 'Copiado',
       step: 'Paso',
@@ -484,6 +493,76 @@ const walkthroughStepsByLocale: Record<Locale, WalkthroughStep[]> = {
   ],
 };
 
+const walkthroughStepsNonCardByLocale: Record<Locale, WalkthroughStep[]> = {
+  en: [
+    {
+      title: 'Install the SDK',
+      description:
+        'Add the Bloque SDK package before writing integration code.',
+      focus: 'Install',
+      filename: 'terminal',
+      lang: 'shell',
+    },
+    {
+      title: 'Set up the account',
+      description:
+        'Instantiate the SDK and create the shared ledger for your product.',
+      focus: 'Setup',
+      filename: 'setup.ts',
+      lang: 'ts',
+    },
+    {
+      title: 'Add plugins',
+      description:
+        'Attach each selected account capability to the same ledger.',
+      focus: 'Plugins',
+      filename: 'plugins.ts',
+      lang: 'ts',
+    },
+    {
+      title: 'Move money',
+      description:
+        'Fund the account and move money to the connected rails.',
+      focus: 'Transfer',
+      filename: 'move-money.ts',
+      lang: 'ts',
+    },
+  ],
+  es: [
+    {
+      title: 'Instala el SDK',
+      description:
+        'Agrega el paquete de Bloque SDK antes de escribir la integracion.',
+      focus: 'Instalar',
+      filename: 'terminal',
+      lang: 'shell',
+    },
+    {
+      title: 'Configura la cuenta',
+      description:
+        'Instancia el SDK y crea el ledger compartido para tu producto.',
+      focus: 'Setup',
+      filename: 'setup.ts',
+      lang: 'ts',
+    },
+    {
+      title: 'Agrega plugins',
+      description: 'Conecta cada capacidad de cuenta elegida al mismo ledger.',
+      focus: 'Plugins',
+      filename: 'plugins.ts',
+      lang: 'ts',
+    },
+    {
+      title: 'Mueve dinero',
+      description:
+        'Fondea la cuenta y mueve dinero a los rieles conectados.',
+      focus: 'Transferir',
+      filename: 'move-money.ts',
+      lang: 'ts',
+    },
+  ],
+};
+
 const getAccountCreationBlocks = ({
   brandName,
   email,
@@ -672,6 +751,42 @@ const card = await session.accounts.card.create(
 );`;
 };
 
+const getAccountSetupCode = ({
+  email,
+  sandboxToken,
+}: {
+  email: string;
+  sandboxToken?: string;
+}) => {
+  const safeAlias = `@${
+    email
+      .split('@')[0]
+      .replace(/[^a-zA-Z0-9_-]/g, '')
+      .toLowerCase() || 'customer'
+  }`;
+
+  const apiKeyLine = sandboxToken
+    ? `    apiKey: ${JSON.stringify(sandboxToken)},`
+    : `    apiKey: process.env.BLOQUE_SECRET_KEY!,`;
+
+  return `import { SDK } from '@bloque/sdk';
+
+const bloque = new SDK({
+  auth: {
+    type: 'apiKey',
+${apiKeyLine}
+  },
+  mode: 'sandbox',
+});
+
+const session = await bloque.connect(${JSON.stringify(safeAlias)});
+
+const pocket = await session.accounts.virtual.create(
+  {},
+  { waitLedger: true },
+);`;
+};
+
 const getMoveMoneyCode = (pluginIds: string[]) => {
   const destinationAccount =
     [
@@ -718,6 +833,41 @@ console.log('Withdrawal queued:', withdrawFromCard.queueId);
 console.log('Plugin transfer queued:', moveToPlugin.queueId);`;
 };
 
+const getNonCardMoveMoneyCode = (pluginIds: string[]) => {
+  const destinationAccount =
+    [
+      ['breb', 'brebAccount'],
+      ['pix-account', 'pixAccount'],
+      ['us-account', 'usAccount'],
+      ['europe-account', 'europeAccount'],
+      ['mexico-account', 'mexicoAccount'],
+      ['polygon', 'polygonAccount'],
+    ].find(([pluginId]) => pluginIds.includes(pluginId))?.[1] ?? 'pocket';
+
+  return `const fundPocket = await session.accounts.transfer({
+  sourceUrn: 'external-funding-source-urn',
+  destinationUrn: pocket.urn,
+  amount: '1000000',
+  asset: 'DUSD/6',
+  metadata: {
+    reference: 'pocket-funding',
+  },
+});
+
+const moveToPlugin = await session.accounts.transfer({
+  sourceUrn: pocket.urn,
+  destinationUrn: ${destinationAccount}.urn,
+  amount: '1000000',
+  asset: 'DUSD/6',
+  metadata: {
+    reference: 'plugin-transfer',
+  },
+});
+
+console.log('Pocket funded:', fundPocket.queueId);
+console.log('Plugin transfer queued:', moveToPlugin.queueId);`;
+};
+
 const readUrlState = () => {
   const p =
     typeof window !== 'undefined'
@@ -750,7 +900,6 @@ const ProductWizard = () => {
       ? 'en'
       : 'es';
   const copy = copyByLocale[locale];
-  const walkthroughSteps = walkthroughStepsByLocale[locale];
   const [step, setStep] = useState(() => readUrlState().step);
   const [email, setEmail] = useState(() => readUrlState().email);
   const [selectedProduct, setSelectedProduct] = useState(
@@ -775,6 +924,15 @@ const ProductWizard = () => {
     () => readUrlState().integrationStep,
   );
   const [sandboxToken] = useState(() => readUrlState().sandboxToken);
+
+  const isCardProduct = selectedProduct.defaultMediums.includes('card');
+  const effectiveSteps = isCardProduct ? [0, 1, 2, 3, 4, 5] : [0, 1, 3, 4, 5];
+  const stepPosition = effectiveSteps.indexOf(step);
+  const stepLabel = String(stepPosition + 1).padStart(2, '0');
+  const lastStep = effectiveSteps[effectiveSteps.length - 1];
+  const activeWalkthroughSteps = isCardProduct
+    ? walkthroughStepsByLocale[locale]
+    : walkthroughStepsNonCardByLocale[locale];
 
   const emailIsValid = /\S+@\S+\.\S+/.test(email);
   const emailBrandName = getBrandFromEmail(email);
@@ -814,21 +972,28 @@ const ProductWizard = () => {
     productTitle: selectedProduct.title,
     includeCard: false,
   }).blocks.join('\n\n');
-  const cardSetupCode = getCardSetupCode({
-    brandName: cardBrandName,
-    email: email || 'customer@company.com',
-    sandboxToken: sandboxToken || undefined,
-  });
-  const moveMoneyCode = getMoveMoneyCode(selectedPluginIds);
+  const setupCode = isCardProduct
+    ? getCardSetupCode({
+        brandName: cardBrandName,
+        email: email || 'customer@company.com',
+        sandboxToken: sandboxToken || undefined,
+      })
+    : getAccountSetupCode({
+        email: email || 'customer@company.com',
+        sandboxToken: sandboxToken || undefined,
+      });
+  const moveMoneyCode = isCardProduct
+    ? getMoveMoneyCode(selectedPluginIds)
+    : getNonCardMoveMoneyCode(selectedPluginIds);
   const walkthroughCode = [
     `bun add @bloque/sdk
 npm install @bloque/sdk
 pnpm add @bloque/sdk`,
-    cardSetupCode,
+    setupCode,
     accountCode || '// Select account plugins to append them here.',
     moveMoneyCode,
   ][integrationStep];
-  const walkthrough = walkthroughSteps[integrationStep];
+  const walkthrough = activeWalkthroughSteps[integrationStep];
   const docsPrefix = locale === 'en' ? '/en' : '/es';
   const docsLinks = [
     {
@@ -881,7 +1046,7 @@ Implementation order:
 2. Initialize an authenticated Bloque SDK session.
 3. Register or resolve the customer identity from the email above.
 4. Create one shared ledger/pocket for the product.
-${includesCard ? '5. Issue a virtual card connected to that ledger.\n' : ''}${selectedPluginIds.includes('breb') ? `${includesCard ? '6' : '5'}. Create a BRE-B key on the same ledger.\n` : ''}${selectedPluginIds.includes('polygon') ? `${includesCard || selectedPluginIds.includes('breb') ? '7' : '5'}. Create a Polygon account on the same ledger.\n` : ''}${selectedPluginIds.includes('us-account') ? '- Add the US account flow only after the TOS link and signed agreement are handled.\n' : ''}${selectedPluginIds.includes('pix-account') ? '- Create the Pix account using an email key on the same ledger.\n' : ''}${selectedPluginIds.includes('mexico-account') ? '- Create the Mexico account on the same ledger.\n' : ''}${selectedPluginIds.includes('europe-account') ? '- Create the Europe account on the same ledger.\n' : ''}- Add transfer flows so funds can move between the card and the selected accounts.
+${includesCard ? '5. Issue a virtual card connected to that ledger.\n' : ''}${selectedPluginIds.includes('breb') ? `${includesCard ? '6' : '5'}. Create a BRE-B key on the same ledger.\n` : ''}${selectedPluginIds.includes('polygon') ? `${includesCard || selectedPluginIds.includes('breb') ? '7' : '5'}. Create a Polygon account on the same ledger.\n` : ''}${selectedPluginIds.includes('us-account') ? '- Add the US account flow only after the TOS link and signed agreement are handled.\n' : ''}${selectedPluginIds.includes('pix-account') ? '- Create the Pix account using an email key on the same ledger.\n' : ''}${selectedPluginIds.includes('mexico-account') ? '- Create the Mexico account on the same ledger.\n' : ''}${selectedPluginIds.includes('europe-account') ? '- Create the Europe account on the same ledger.\n' : ''}- Add transfer flows so funds can move between the${includesCard ? ' card and the' : ''} selected accounts.
 - Return clear TypeScript functions, typed inputs, error handling, and a minimal usage example.
 
 Use these docs while implementing:
@@ -890,6 +1055,9 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
   const chooseProduct = (product: Product) => {
     setSelectedProduct(product);
     setSelectedPluginIds(product.defaultMediums);
+    if (!product.defaultMediums.includes('card') && step === 2) {
+      setStep(3);
+    }
   };
 
   const togglePlugin = (pluginId: string) => {
@@ -905,7 +1073,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
 
   const goWalkthroughNext = () => {
     setIntegrationStep((current) =>
-      Math.min(current + 1, walkthroughSteps.length - 1),
+      Math.min(current + 1, activeWalkthroughSteps.length - 1),
     );
   };
 
@@ -924,7 +1092,13 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
       return;
     }
 
-    setStep((current) => Math.min(current + 1, 5));
+    const currentIdx = effectiveSteps.indexOf(step);
+    setStep(effectiveSteps[Math.min(currentIdx + 1, effectiveSteps.length - 1)]);
+  };
+
+  const goBack = () => {
+    const currentIdx = effectiveSteps.indexOf(step);
+    setStep(effectiveSteps[Math.max(currentIdx - 1, 0)]);
   };
 
   useEffect(() => {
@@ -973,7 +1147,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
           {step === 0 ? (
             <div className="bp-screen bp-screen--email">
               <div className="bp-screen__copy">
-                <span>01</span>
+                <span>{stepLabel}</span>
                 <h2>{copy.email.title}</h2>
                 <p>{copy.email.description}</p>
               </div>
@@ -993,7 +1167,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
           {step === 1 ? (
             <div className="bp-screen">
               <div className="bp-screen__copy">
-                <span>02</span>
+                <span>{stepLabel}</span>
                 <h2>{copy.product.title}</h2>
                 <p>{copy.product.description}</p>
               </div>
@@ -1015,11 +1189,11 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
             </div>
           ) : null}
 
-          {step === 2 ? (
+          {step === 2 && isCardProduct ? (
             <div className="bp-screen bp-screen--studio">
               <div className="bp-studio-heading">
                 <div className="bp-screen__copy">
-                  <span>03</span>
+                  <span>{stepLabel}</span>
                   <h2>{copy.studio.title}</h2>
                   <p>{copy.studio.description}</p>
                 </div>
@@ -1135,7 +1309,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
           {step === 3 ? (
             <div className="bp-screen bp-screen--plugins">
               <div className="bp-screen__copy">
-                <span>04</span>
+                <span>{stepLabel}</span>
                 <h2>{copy.plugins.title}</h2>
                 <p>{copy.plugins.description}</p>
               </div>
@@ -1144,7 +1318,8 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
                 <aside className="bp-plugin-list" aria-label="Plugin options">
                   {pluginCategories.map((category) => {
                     const categoryPlugins = plugins.filter((p) =>
-                      category.pluginIds.includes(p.id),
+                      category.pluginIds.includes(p.id) &&
+                      selectedProduct.relevantPluginIds.includes(p.id),
                     );
                     if (categoryPlugins.length === 0) return null;
                     return (
@@ -1205,15 +1380,15 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
           {step === 4 ? (
             <div className="bp-screen bp-screen--walkthrough">
               <div className="bp-screen__copy">
-                <span>05</span>
+                <span>{stepLabel}</span>
                 <h2>{copy.code.title}</h2>
-                <p>{copy.code.description}</p>
+                <p>{isCardProduct ? copy.code.description : copy.code.descriptionNoCard}</p>
               </div>
 
               <div className="bp-walkthrough">
                 <section className="bp-walkthrough-panel">
                   <div className="bp-walkthrough-nav">
-                    {walkthroughSteps.map((item, index) => (
+                    {activeWalkthroughSteps.map((item, index) => (
                       <button
                         className={`bp-walkthrough-pill ${
                           index === integrationStep ? 'is-active' : ''
@@ -1243,7 +1418,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
                       <button
                         className="bp-button"
                         disabled={
-                          integrationStep === walkthroughSteps.length - 1
+                          integrationStep === activeWalkthroughSteps.length - 1
                         }
                         onClick={goWalkthroughNext}
                         type="button"
@@ -1263,7 +1438,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
                       <strong>{walkthrough.filename}</strong>
                       <span>
                         {copy.code.step} {integrationStep + 1} {copy.code.of}{' '}
-                        {walkthroughSteps.length}
+                        {activeWalkthroughSteps.length}
                       </span>
                     </div>
                     <button
@@ -1304,7 +1479,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
           {step === 5 ? (
             <div className="bp-screen bp-screen--handoff">
               <div className="bp-screen__copy">
-                <span>06</span>
+                <span>{stepLabel}</span>
                 <h2>
                   {locale === 'en' ? (
                     <>Hand this to <em>your</em> agent.</>
@@ -1393,7 +1568,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
             <button
               className="bp-link-button"
               disabled={step === 0}
-              onClick={() => setStep((current) => Math.max(current - 1, 0))}
+              onClick={goBack}
               type="button"
             >
               {copy.footer.back}
@@ -1401,16 +1576,16 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
             <div
               className="bp-progress"
               role="progressbar"
-              aria-label={`Step ${step + 1} of 6`}
-              aria-valuemax={6}
+              aria-label={`Step ${stepPosition + 1} of ${effectiveSteps.length}`}
+              aria-valuemax={effectiveSteps.length}
               aria-valuemin={1}
-              aria-valuenow={step + 1}
+              aria-valuenow={stepPosition + 1}
             >
-              {[0, 1, 2, 3, 4, 5].map((item) => (
-                <span className={item <= step ? 'is-active' : ''} key={item} />
+              {effectiveSteps.map((_, idx) => (
+                <span className={idx <= stepPosition ? 'is-active' : ''} key={idx} />
               ))}
             </div>
-            {step < 5 ? (
+            {step < lastStep ? (
               <button
                 className="bp-button"
                 disabled={step === 0 && !emailIsValid}
