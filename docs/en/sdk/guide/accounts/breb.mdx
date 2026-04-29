@@ -1,0 +1,340 @@
+import { QuestHeader } from '@theme';
+
+<QuestHeader
+  prereqs={["Connected SDK client", "KYC approved identity"]}
+  unlocks={["BRE-B payment key", "Receive instant payments via phone, email, or ID"]}
+  time="5 min"
+/>
+
+# BRE-B
+
+Create and resolve BRE-B payment keys through the SDK.
+
+## Overview
+
+The BRE-B client lets you:
+
+- create a BRE-B key
+- associate the key with the account for an existing ledger when `ledgerId` is provided, or create an account automatically when it is omitted
+- resolve a BRE-B key before starting a payment flow
+- pay to a resolved BRE-B key through `session.swap.breb.create()`
+- manage the key lifecycle by suspending, activating, or deleting a stored key
+
+## Create a BRE-B Key
+
+```typescript title="create-breb-key.ts"
+const { data, error } = await session.accounts.breb.createKey({
+  ledgerId: 'ledger-account-id',
+  keyType: 'PHONE',
+  key: '3015550184',
+  displayName: 'Camila Ortega',
+  webhookUrl: 'https://api.example.com/webhooks/breb',
+  metadata: {
+    source: 'checkout',
+  },
+});
+
+if (error) {
+  console.error(error.code, error.message);
+} else {
+  console.log(data?.urn);
+  console.log(data?.remoteKeyId);
+}
+```
+
+## Create Params
+
+### Create a key
+
+For more endpoint details, see: [Create a BRE-B Key](#create-a-bre-b-key).
+
+```typescript title="types.ts"
+interface CreateBrebKeyParams {
+  keyType: 'ID' | 'PHONE' | 'EMAIL' | 'ALPHA' | 'BCODE';
+  key: string;
+  displayName?: string;
+  ledgerId?: string;
+  webhookUrl?: string;
+  metadata?: Record<string, unknown>;
+}
+```
+
+### Key types and key value
+
+In the SDK you use `keyType` and `key`. In BRE-B infrastructure those fields commonly appear as `key_type` and `key_value`.
+
+`keyType` defines the format and purpose of the key inside BRE-B, while `key` contains the key value itself. These keys enable fast and secure payments between people and businesses without sharing traditional banking details.
+
+| SDK type (`keyType`) | BRE-B reference (`key_type`) | Description | Example value (`key`) |
+| --- | --- | --- | --- |
+| `ID` | `ID` | Identification number | `7922089` |
+| `PHONE` | `MOBILE` | Mobile phone number | `+573001234567` |
+| `EMAIL` | `EMAIL` | Email address | `user@example.com` |
+| `ALPHA` | `ALPHA` | Custom alias | `@clientalias123` |
+| `BCODE` | `BCODE` | Entity commercial code | `0012345678` |
+
+:::note
+The `keyType` + `key` combination must be unique across the BRE-B infrastructure. The platform validates this uniqueness.
+:::
+
+## Create Result
+
+```typescript title="types.ts"
+type BrebOperationResult<T> = {
+  data: T | null;
+  error: {
+    code: string | null;
+    message: string;
+  } | null;
+};
+```
+
+`createKey()` returns `{ data, error }`. On success, `error` is `null`. On failure, `data` is `null`.
+
+If you pass `ledgerId`, the BRE-B key is associated with the account for that ledger. If you omit it, the SDK creates an account automatically.
+
+When `createKey()` succeeds, `data` contains the created BRE-B key and its associated account:
+
+```typescript title="types.ts"
+interface BrebKeyAccount {
+  id: string;
+  urn: string;
+  ownerUrn: string;
+  medium: 'breb';
+  remoteKeyId: string;
+  accountId: string;
+  keyType: 'ID' | 'PHONE' | 'EMAIL' | 'ALPHA' | 'BCODE';
+  key: string;
+  displayName: string | null;
+  status: AccountStatus;
+  ledgerId: string;
+  webhookUrl: string | null;
+  metadata?: Record<string, unknown>;
+  details: {
+    id: string;
+    remote_key_id: string;
+    account_id: string;
+    key: {
+      key_type: 'ID' | 'PHONE' | 'EMAIL' | 'ALPHA' | 'BCODE';
+      key_value: string;
+    };
+    display_name: string | null;
+    status: string;
+    created_at: string | null;
+    updated_at: string | null;
+    raw_response: Record<string, unknown>;
+  };
+  balance?: Record<string, TokenBalance>;
+}
+```
+
+## Resolve a BRE-B Key
+
+```typescript title="resolve-breb-key.ts"
+const { data, error } = await session.accounts.breb.resolveKey({
+  keyType: 'PHONE',
+  key: '3015550127',
+});
+
+if (error) {
+  console.error(error.code, error.message);
+} else {
+  console.log(data?.resolutionId);
+  console.log(data?.owner?.name);
+  console.log(data?.account?.accountNumber);
+}
+```
+
+## Resolve Response
+
+```typescript title="types.ts"
+interface BrebResolvedKey {
+  id: string;
+  resolutionId: string;
+  customerId: string;
+  key: {
+    keyType: 'ID' | 'PHONE' | 'EMAIL' | 'ALPHA' | 'BCODE';
+    keyValue: string;
+  };
+  owner: {
+    identificationType: string | null;
+    identificationNumber: string | null;
+    firstName: string | null;
+    secondName: string | null;
+    firstLastName: string | null;
+    secondLastName: string | null;
+    type: string | null;
+    businessName: string | null;
+    name: string | null;
+  } | null;
+  participant: {
+    name: string | null;
+    identificationNumber: string | null;
+  } | null;
+  account: {
+    accountNumber: string | null;
+    accountType: string | null;
+  } | null;
+  receptorNode: string | null;
+  resolvedAt: string | null;
+  expiresAt: string | null;
+  raw: Record<string, unknown>;
+}
+```
+
+## Pay to a BRE-B Key
+
+Resolve the recipient key first, then create a BRE-B payout order:
+
+```typescript title="pay-to-breb-key.ts"
+const resolution = await session.accounts.breb.resolveKey({
+  keyType: 'PHONE',
+  key: '3015550127',
+});
+
+if (resolution.error || !resolution.data) {
+  throw new Error(
+    resolution.error?.message ?? 'Failed to resolve BRE-B key',
+  );
+}
+
+const rates = await session.swap.findRates({
+  fromAsset: 'COPM/2',
+  toAsset: 'COP/2',
+  fromMediums: ['kusama'],
+  toMediums: ['breb'],
+  amountSrc: '10000000',
+});
+
+if (rates.rates.length === 0) {
+  throw new Error('No swap rates available for BRE-B payout.');
+}
+
+const result = await session.swap.breb.create({
+  rateSig: rates.rates[0].sig,
+  amountSrc: '10000000',
+  depositInformation: {
+    resolutionId: resolution.data.resolutionId,
+  },
+  args: {
+    sourceAccountUrn: 'did:bloque:account:breb:demo-account-id',
+  },
+});
+
+console.log(result.order.id, result.order.status);
+```
+
+## Suspend a BRE-B Key
+
+```typescript title="suspend-breb-key.ts"
+const { data, error } = await session.accounts.breb.suspendKey({
+  accountUrn: 'did:bloque:account:breb:demo-account-id',
+});
+
+if (error) {
+  console.error(error.code, error.message);
+} else {
+  console.log(data?.status);
+}
+```
+
+## Activate a BRE-B Key
+
+```typescript title="activate-breb-key.ts"
+const { data, error } = await session.accounts.breb.activateKey({
+  accountUrn: 'did:bloque:account:breb:demo-account-id',
+});
+
+if (error) {
+  console.error(error.code, error.message);
+} else {
+  console.log(data?.status);
+}
+```
+
+## Delete a BRE-B Key
+
+```typescript title="delete-breb-key.ts"
+const { data, error } = await session.accounts.breb.deleteKey({
+  accountUrn: 'did:bloque:account:breb:demo-account-id',
+});
+
+if (error) {
+  console.error(error.code, error.message);
+} else {
+  console.log(data?.deleted, data?.status);
+}
+```
+
+## Lifecycle Params and Results
+
+```typescript title="types.ts"
+interface DeleteBrebKeyParams {
+  accountUrn: string;
+}
+
+interface SuspendBrebKeyParams {
+  accountUrn: string;
+}
+
+interface ActivateBrebKeyParams {
+  accountUrn: string;
+}
+
+interface DeleteBrebKeyResult {
+  deleted: true;
+  accountUrn: string;
+  keyId: string;
+  status: 'deleted';
+}
+
+interface SuspendBrebKeyResult {
+  accountUrn: string;
+  keyId: string;
+  keyStatus: string;
+  status: 'frozen';
+}
+
+interface ActivateBrebKeyResult {
+  accountUrn: string;
+  keyId: string;
+  keyStatus: string;
+  status: 'active';
+}
+```
+
+## Error Handling
+
+BRE-B operations return minimal errors:
+
+```typescript title="error-handling.ts"
+const { data, error } = await session.accounts.breb.createKey({
+  ledgerId: 'ledger-account-id',
+  keyType: 'PHONE',
+  key: '3015550184',
+});
+
+if (error) {
+  if (error.code === 'U808') {
+    console.log('Key already registered');
+  }
+
+  console.error(error.message);
+}
+```
+
+## Notes
+
+- `holder_urn` is taken from the connected SDK session
+- if `ledgerId` is provided, the account is linked to that ledger
+- if `ledgerId` is omitted, a ledger is created automatically
+- key suspension updates the account with `PATCH /api/accounts/:accountUrn` and `status: 'frozen'`
+- key activation updates the account with `PATCH /api/accounts/:accountUrn` and `status: 'active'`
+- key deletion updates the account with `PATCH /api/accounts/:accountUrn` and `status: 'deleted'`
+- BRE-B payments are created through `session.swap.breb.create()`
+
+## Next Steps
+
+- [Accounts Overview](/sdk/guide/accounts/overview)
+- [Transfers](/sdk/guide/accounts/transfers)
+- [Webhooks](/sdk/guide/accounts/webhooks)

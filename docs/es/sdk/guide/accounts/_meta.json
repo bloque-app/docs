@@ -6,6 +6,11 @@
   },
   {
     "type": "file",
+    "name": "webhooks",
+    "label": "Webhooks de Cuentas"
+  },
+  {
+    "type": "file",
     "name": "virtual",
     "label": "Cuentas Virtuales"
   },
@@ -28,6 +33,11 @@
     "type": "file",
     "name": "bancolombia",
     "label": "Bancolombia"
+  },
+  {
+    "type": "file",
+    "name": "breb",
+    "label": "BRE-B"
   },
   {
     "type": "file",

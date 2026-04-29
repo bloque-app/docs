@@ -1,0 +1,340 @@
+import { QuestHeader } from '@theme';
+
+<QuestHeader
+  prereqs={["Cliente SDK conectado", "Identidad con KYC aprobado"]}
+  unlocks={["Llave de pago BRE-B", "Recibir pagos instantáneos por teléfono, email o cédula"]}
+  time="5 min"
+/>
+
+# BRE-B
+
+Crea y resuelve llaves BRE-B desde el SDK.
+
+## Descripción general
+
+El cliente de BRE-B te permite:
+
+- crear una llave BRE-B
+- asociar la llave a la cuenta de un ledger existente cuando envías `ledgerId`, o crear una cuenta automáticamente cuando no lo envías
+- resolver una llave BRE-B antes de iniciar un flujo de pago
+- pagar a una llave BRE-B resuelta a través de `session.swap.breb.create()`
+- gestionar el ciclo de vida de la llave suspendiendo, activando o eliminando una llave guardada
+
+## Crear una llave BRE-B
+
+```typescript title="crear-llave-breb.ts"
+const { data, error } = await session.accounts.breb.createKey({
+  ledgerId: 'ledger-account-id',
+  keyType: 'PHONE',
+  key: '3015550184',
+  displayName: 'Camila Ortega',
+  webhookUrl: 'https://api.example.com/webhooks/breb',
+  metadata: {
+    source: 'checkout',
+  },
+});
+
+if (error) {
+  console.error(error.code, error.message);
+} else {
+  console.log(data?.urn);
+  console.log(data?.remoteKeyId);
+}
+```
+
+## Parámetros de creación
+
+### Crear una llave
+
+Para más detalles del endpoint, consulta esta sección: [Crear una llave BRE-B](#crear-una-llave-bre-b).
+
+```typescript title="tipos.ts"
+interface CreateBrebKeyParams {
+  keyType: 'ID' | 'PHONE' | 'EMAIL' | 'ALPHA' | 'BCODE';
+  key: string;
+  displayName?: string;
+  ledgerId?: string;
+  webhookUrl?: string;
+  metadata?: Record<string, unknown>;
+}
+```
+
+### Tipos de llave y valor de la llave
+
+En el SDK usas `keyType` y `key`. En la infraestructura BRE-B esos campos suelen aparecer como `key_type` y `key_value`.
+
+`keyType` define el formato y propósito de la llave dentro del sistema BRE-B, mientras `key` contiene el valor de la llave. Estas llaves permiten pagos rápidos y seguros entre personas y empresas, sin necesidad de compartir información bancaria tradicional.
+
+| Tipo en SDK (`keyType`) | Referencia BRE-B (`key_type`) | Descripción | Ejemplo de valor (`key`) |
+| --- | --- | --- | --- |
+| `ID` | `ID` | Número de documento | `7922089` |
+| `PHONE` | `MOBILE` | Número de celular | `+573001234567` |
+| `EMAIL` | `EMAIL` | Correo electrónico | `user@example.com` |
+| `ALPHA` | `ALPHA` | Alias personalizado | `@clientalias123` |
+| `BCODE` | `BCODE` | Código comercial de la entidad | `0012345678` |
+
+:::note
+La combinación de `keyType` + `key` debe ser única en toda la infraestructura BRE-B. La plataforma valida esta unicidad.
+:::
+
+## Resultado de creación
+
+```typescript title="tipos.ts"
+type BrebOperationResult<T> = {
+  data: T | null;
+  error: {
+    code: string | null;
+    message: string;
+  } | null;
+};
+```
+
+`createKey()` retorna `{ data, error }`. En éxito, `error` es `null`. En error, `data` es `null`.
+
+Si envías `ledgerId`, la llave BRE-B se asocia a la cuenta de ese ledger. Si no lo envías, el SDK crea una cuenta automáticamente.
+
+Cuando `createKey()` es exitoso, `data` contiene la llave BRE-B creada y su cuenta asociada:
+
+```typescript title="tipos.ts"
+interface BrebKeyAccount {
+  id: string;
+  urn: string;
+  ownerUrn: string;
+  medium: 'breb';
+  remoteKeyId: string;
+  accountId: string;
+  keyType: 'ID' | 'PHONE' | 'EMAIL' | 'ALPHA' | 'BCODE';
+  key: string;
+  displayName: string | null;
+  status: AccountStatus;
+  ledgerId: string;
+  webhookUrl: string | null;
+  metadata?: Record<string, unknown>;
+  details: {
+    id: string;
+    remote_key_id: string;
+    account_id: string;
+    key: {
+      key_type: 'ID' | 'PHONE' | 'EMAIL' | 'ALPHA' | 'BCODE';
+      key_value: string;
+    };
+    display_name: string | null;
+    status: string;
+    created_at: string | null;
+    updated_at: string | null;
+    raw_response: Record<string, unknown>;
+  };
+  balance?: Record<string, TokenBalance>;
+}
+```
+
+## Resolver una llave BRE-B
+
+```typescript title="resolver-llave-breb.ts"
+const { data, error } = await session.accounts.breb.resolveKey({
+  keyType: 'PHONE',
+  key: '3015550127',
+});
+
+if (error) {
+  console.error(error.code, error.message);
+} else {
+  console.log(data?.resolutionId);
+  console.log(data?.owner?.name);
+  console.log(data?.account?.accountNumber);
+}
+```
+
+## Respuesta de resolución
+
+```typescript title="tipos.ts"
+interface BrebResolvedKey {
+  id: string;
+  resolutionId: string;
+  customerId: string;
+  key: {
+    keyType: 'ID' | 'PHONE' | 'EMAIL' | 'ALPHA' | 'BCODE';
+    keyValue: string;
+  };
+  owner: {
+    identificationType: string | null;
+    identificationNumber: string | null;
+    firstName: string | null;
+    secondName: string | null;
+    firstLastName: string | null;
+    secondLastName: string | null;
+    type: string | null;
+    businessName: string | null;
+    name: string | null;
+  } | null;
+  participant: {
+    name: string | null;
+    identificationNumber: string | null;
+  } | null;
+  account: {
+    accountNumber: string | null;
+    accountType: string | null;
+  } | null;
+  receptorNode: string | null;
+  resolvedAt: string | null;
+  expiresAt: string | null;
+  raw: Record<string, unknown>;
+}
+```
+
+## Pagar a una llave BRE-B
+
+Primero resuelve la llave del destinatario y luego crea la orden de pago BRE-B:
+
+```typescript title="pagar-a-llave-breb.ts"
+const resolution = await session.accounts.breb.resolveKey({
+  keyType: 'PHONE',
+  key: '3015550127',
+});
+
+if (resolution.error || !resolution.data) {
+  throw new Error(
+    resolution.error?.message ?? 'Failed to resolve BRE-B key',
+  );
+}
+
+const rates = await session.swap.findRates({
+  fromAsset: 'COPM/2',
+  toAsset: 'COP/2',
+  fromMediums: ['kusama'],
+  toMediums: ['breb'],
+  amountSrc: '10000000',
+});
+
+if (rates.rates.length === 0) {
+  throw new Error('No hay tasas disponibles para el pago BRE-B.');
+}
+
+const result = await session.swap.breb.create({
+  rateSig: rates.rates[0].sig,
+  amountSrc: '10000000',
+  depositInformation: {
+    resolutionId: resolution.data.resolutionId,
+  },
+  args: {
+    sourceAccountUrn: 'did:bloque:account:breb:demo-account-id',
+  },
+});
+
+console.log(result.order.id, result.order.status);
+```
+
+## Suspender una llave BRE-B
+
+```typescript title="suspender-llave-breb.ts"
+const { data, error } = await session.accounts.breb.suspendKey({
+  accountUrn: 'did:bloque:account:breb:demo-account-id',
+});
+
+if (error) {
+  console.error(error.code, error.message);
+} else {
+  console.log(data?.status);
+}
+```
+
+## Activar una llave BRE-B
+
+```typescript title="activar-llave-breb.ts"
+const { data, error } = await session.accounts.breb.activateKey({
+  accountUrn: 'did:bloque:account:breb:demo-account-id',
+});
+
+if (error) {
+  console.error(error.code, error.message);
+} else {
+  console.log(data?.status);
+}
+```
+
+## Eliminar una llave BRE-B
+
+```typescript title="eliminar-llave-breb.ts"
+const { data, error } = await session.accounts.breb.deleteKey({
+  accountUrn: 'did:bloque:account:breb:demo-account-id',
+});
+
+if (error) {
+  console.error(error.code, error.message);
+} else {
+  console.log(data?.deleted, data?.status);
+}
+```
+
+## Parámetros y resultados del ciclo de vida
+
+```typescript title="tipos.ts"
+interface DeleteBrebKeyParams {
+  accountUrn: string;
+}
+
+interface SuspendBrebKeyParams {
+  accountUrn: string;
+}
+
+interface ActivateBrebKeyParams {
+  accountUrn: string;
+}
+
+interface DeleteBrebKeyResult {
+  deleted: true;
+  accountUrn: string;
+  keyId: string;
+  status: 'deleted';
+}
+
+interface SuspendBrebKeyResult {
+  accountUrn: string;
+  keyId: string;
+  keyStatus: string;
+  status: 'frozen';
+}
+
+interface ActivateBrebKeyResult {
+  accountUrn: string;
+  keyId: string;
+  keyStatus: string;
+  status: 'active';
+}
+```
+
+## Manejo de errores
+
+Las operaciones BRE-B retornan errores mínimos:
+
+```typescript title="manejo-errores.ts"
+const { data, error } = await session.accounts.breb.createKey({
+  ledgerId: 'ledger-account-id',
+  keyType: 'PHONE',
+  key: '3015550184',
+});
+
+if (error) {
+  if (error.code === 'U808') {
+    console.log('La llave ya está registrada');
+  }
+
+  console.error(error.message);
+}
+```
+
+## Notas
+
+- `holder_urn` se toma de la sesión conectada del SDK
+- si envías `ledgerId`, la cuenta se asocia a ese ledger
+- si no envías `ledgerId`, se crea un ledger automáticamente
+- la suspensión actualiza la cuenta con `PATCH /api/accounts/:accountUrn` y `status: 'frozen'`
+- la activación actualiza la cuenta con `PATCH /api/accounts/:accountUrn` y `status: 'active'`
+- la eliminación actualiza la cuenta con `PATCH /api/accounts/:accountUrn` y `status: 'deleted'`
+- los pagos BRE-B se crean con `session.swap.breb.create()`
+
+## Próximos pasos
+
+- [Descripción general de cuentas](/sdk/guide/accounts/overview)
+- [Transferencias](/sdk/guide/accounts/transfers)
+- [Webhooks](/sdk/guide/accounts/webhooks)

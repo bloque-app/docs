@@ -9,7 +9,9 @@ El SDK de Bloque es una biblioteca TypeScript-first que simplifica la integraci�
 - **Gestión de Organizaciones**: Crear y gestionar organizaciones empresariales e individuales
 - **Verificación KYC**: Implementar flujos de trabajo de cumplimiento Know Your Customer (KYC)
 - **Tarjetas Virtuales**: Emitir tarjetas virtuales instantáneamente para tus usuarios
+- **Llaves BRE-B**: Crear y resolver llaves de pago para flujos de pago inmediatos
 - **Cumplimiento**: Cumplir con requisitos regulatorios con herramientas de cumplimiento integradas
+- **Integración con Agentes IA**: Expone el SDK completo a agentes de código con IA vía MCP con la [CLI de Bloque](/sdk/guide/start/cli)
 
 ## Características Clave
 
@@ -86,15 +88,26 @@ Emite tarjetas virtuales para empleados y rastrea gastos con datos detallados de
 
 Agrega características financieras a tu producto SaaS sin construir infraestructura desde cero.
 
+### Integración con Agentes IA
+
+Usa Bloque directamente desde tu agente de código con IA. La CLI instala un servidor MCP que expone 38 herramientas financieras — desde crear tarjetas hasta mover fondos — todo a través de lenguaje natural.
+
+```bash
+npx @bloque/cli setup
+```
+
+Soporta Cursor, Claude Desktop, Claude Code y Antigravity.
+
 ## Arquitectura
 
-El SDK de Bloque está organizado en tres módulos principales:
+El SDK de Bloque está organizado en módulos enfocados más una CLI para agentes IA:
 
 ```
 @bloque/sdk
 ├── orgs        # Gestión de organizaciones
 ├── compliance  # KYC y cumplimiento
-└── accounts    # Tarjetas virtuales y cuentas
+├── accounts    # Tarjetas virtuales y cuentas
+└── cli         # CLI + servidor MCP para agentes IA
 ```
 
 Cada módulo es independientemente accesible pero funciona perfectamente en conjunto para proporcionar una solución completa de infraestructura financiera.
@@ -104,6 +117,8 @@ Cada módulo es independientemente accesible pero funciona perfectamente en conj
 ¿Listo para comenzar? Sigue nuestra guía de Inicio Rápido para hacer tu primera llamada a la API en minutos.
 
 - [Inicio Rápido](/sdk/guide/start/getting-started) - Comienza rápidamente
+- [CLI y Servidor MCP](/sdk/guide/start/cli) - Usa Bloque con agentes IA
 - [Guía de Organizaciones](/sdk/guide/features/organizations) - Aprende sobre gestión de organizaciones
 - [Guía de Cumplimiento](/sdk/guide/features/compliance) - Implementa verificación KYC
 - [Guía de Cuentas](/sdk/guide/accounts/overview) - Crea tarjetas virtuales
+- [Guía de BRE-B](/sdk/guide/accounts/breb) - Crea y resuelve llaves BRE-B
