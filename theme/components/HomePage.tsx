@@ -623,9 +623,11 @@ const card = await session.accounts.card.create(
 const getCardSetupCode = ({
   brandName,
   email,
+  sandboxToken,
 }: {
   brandName: string;
   email: string;
+  sandboxToken?: string;
 }) => {
   const safeAlias = `@${
     email
@@ -634,12 +636,16 @@ const getCardSetupCode = ({
       .toLowerCase() || 'customer'
   }`;
 
+  const apiKeyLine = sandboxToken
+    ? `    apiKey: ${JSON.stringify(sandboxToken)},`
+    : `    apiKey: process.env.BLOQUE_SECRET_KEY!,`;
+
   return `import { SDK } from '@bloque/sdk';
 
 const bloque = new SDK({
   auth: {
     type: 'apiKey',
-    apiKey: process.env.BLOQUE_SECRET_KEY!,
+${apiKeyLine}
   },
   mode: 'sandbox',
 });
@@ -734,6 +740,7 @@ const readUrlState = () => {
     primaryColor: p.get('pc') ? `#${p.get('pc')}` : style.primaryColor,
     accentColor: p.get('ac') ? `#${p.get('ac')}` : style.accentColor,
     integrationStep: Math.max(0, Number(p.get('ws')) || 0),
+    sandboxToken: p.get('sandbox_token') ?? '',
   };
 };
 
@@ -767,6 +774,7 @@ const ProductWizard = () => {
   const [integrationStep, setIntegrationStep] = useState(
     () => readUrlState().integrationStep,
   );
+  const [sandboxToken] = useState(() => readUrlState().sandboxToken);
 
   const emailIsValid = /\S+@\S+\.\S+/.test(email);
   const emailBrandName = getBrandFromEmail(email);
@@ -809,6 +817,7 @@ const ProductWizard = () => {
   const cardSetupCode = getCardSetupCode({
     brandName: cardBrandName,
     email: email || 'customer@company.com',
+    sandboxToken: sandboxToken || undefined,
   });
   const moveMoneyCode = getMoveMoneyCode(selectedPluginIds);
   const walkthroughCode = [
@@ -862,7 +871,8 @@ Build a ${selectedProduct.title} for ${cardBrandName} using @bloque/sdk.
 
 Customer identifier:
 ${email || 'customer@company.com'}
-
+${sandboxToken ? `\nSDK token (sandbox, ready to use):
+${sandboxToken}\n` : ''}
 Selected account capabilities:
 ${selectedMediums.map((medium) => `- ${medium.name}: ${medium.description}`).join('\n')}
 
@@ -931,9 +941,10 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
     if (primaryColor !== selectedStyle.primaryColor) params.set('pc', primaryColor.replace('#', ''));
     if (accentColor !== selectedStyle.accentColor) params.set('ac', accentColor.replace('#', ''));
     if (integrationStep > 0) params.set('ws', String(integrationStep));
+    if (sandboxToken) params.set('sandbox_token', sandboxToken);
     const qs = params.toString();
     history.replaceState(null, '', qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
-  }, [step, email, selectedProduct, selectedPluginIds, selectedStyle, brandName, primaryColor, accentColor, integrationStep]);
+  }, [step, email, selectedProduct, selectedPluginIds, selectedStyle, brandName, primaryColor, accentColor, integrationStep, sandboxToken]);
 
   const copyCurrentCode = async () => {
     if (!navigator.clipboard) {
