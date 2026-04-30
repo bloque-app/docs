@@ -108,9 +108,6 @@ type Copy = {
     back: string;
     next: string;
     done: string;
-    saving: string;
-    saved: string;
-    saveError: string;
   };
 };
 
@@ -224,9 +221,6 @@ const copyByLocale: Record<Locale, Copy> = {
       back: 'Back',
       next: 'Next',
       done: 'Ready to build',
-      saving: 'Saving...',
-      saved: 'Saved',
-      saveError: 'Save failed',
     },
   },
   es: {
@@ -289,9 +283,6 @@ const copyByLocale: Record<Locale, Copy> = {
       back: 'Atras',
       next: 'Siguiente',
       done: 'Listo para construir',
-      saving: 'Guardando...',
-      saved: 'Guardado',
-      saveError: 'Error al guardar',
     },
   },
 };
@@ -916,8 +907,6 @@ const SUPABASE_URL = __PUBLIC_SUPABASE_URL__;
 const SUPABASE_ANON_KEY = __PUBLIC_SUPABASE_PUBLISHABLE_KEY__;
 const SUPABASE_TABLE = __PUBLIC_SUPABASE_TABLE__ || 'homepage_leads';
 
-type SaveState = 'idle' | 'saving' | 'saved' | 'error';
-
 const ProductWizard = () => {
   const locale: Locale =
     typeof window !== 'undefined' && window.location.pathname.startsWith('/en')
@@ -948,8 +937,9 @@ const ProductWizard = () => {
     () => readUrlState().integrationStep,
   );
   const [sandboxToken] = useState(() => readUrlState().sandboxToken);
-  const [saveState, setSaveState] = useState<SaveState>('idle');
   const [sessionId, setSessionId] = useState('');
+  const [showIntro, setShowIntro] = useState(true);
+  const [introFading, setIntroFading] = useState(false);
 
   const isCardProduct = selectedProduct.defaultMediums.includes('card');
   const effectiveSteps = isCardProduct ? [0, 1, 2, 3, 4, 5] : [0, 1, 3, 4, 5];
@@ -1083,6 +1073,16 @@ Use these docs while implementing:
 ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
 
   useEffect(() => {
+    const fadeTimer = window.setTimeout(() => setIntroFading(true), 1300);
+    const hideTimer = window.setTimeout(() => setShowIntro(false), 1900);
+
+    return () => {
+      window.clearTimeout(fadeTimer);
+      window.clearTimeout(hideTimer);
+    };
+  }, []);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return;
     const storageKey = 'bloque-homepage-session-id';
     const existing = window.localStorage.getItem(storageKey);
@@ -1192,7 +1192,6 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
     }
 
     const timeout = window.setTimeout(async () => {
-      setSaveState('saving');
       try {
         const payload = {
           session_id: sessionId,
@@ -1232,11 +1231,8 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
             `Supabase save failed with status ${response.status}: ${body}`,
           );
         }
-
-        setSaveState('saved');
       } catch (error) {
         console.error(error);
-        setSaveState('error');
       }
     }, 450);
 
@@ -1282,7 +1278,26 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
     <main className="bloque-product bp-shell">
       <section className="bp-wizard" aria-label="Bloque product wizard">
         <div className="bp-wizard__body">
-          {step === 0 ? (
+          {showIntro ? (
+            <div className="bp-screen bp-screen--email">
+              <div className="bp-screen__copy">
+                <span>01</span>
+                <h2
+                  style={{
+                    opacity: introFading ? 0 : 1,
+                    transform: introFading
+                      ? 'translateY(-8px)'
+                      : 'translateY(0px)',
+                    transition: 'opacity 520ms ease, transform 520ms ease',
+                  }}
+                >
+                  Let&apos;s design your financial product
+                </h2>
+              </div>
+            </div>
+          ) : null}
+
+          {!showIntro && step === 0 ? (
             <div className="bp-screen bp-screen--email">
               <div className="bp-screen__copy">
                 <span>{stepLabel}</span>
@@ -1302,7 +1317,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
             </div>
           ) : null}
 
-          {step === 1 ? (
+          {!showIntro && step === 1 ? (
             <div className="bp-screen">
               <div className="bp-screen__copy">
                 <span>{stepLabel}</span>
@@ -1327,7 +1342,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
             </div>
           ) : null}
 
-          {step === 2 && isCardProduct ? (
+          {!showIntro && step === 2 && isCardProduct ? (
             <div className="bp-screen bp-screen--studio">
               <div className="bp-studio-heading">
                 <div className="bp-screen__copy">
@@ -1444,7 +1459,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
             </div>
           ) : null}
 
-          {step === 3 ? (
+          {!showIntro && step === 3 ? (
             <div className="bp-screen bp-screen--plugins">
               <div className="bp-screen__copy">
                 <span>{stepLabel}</span>
@@ -1516,7 +1531,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
             </div>
           ) : null}
 
-          {step === 4 ? (
+          {!showIntro && step === 4 ? (
             <div className="bp-screen bp-screen--walkthrough">
               <div className="bp-screen__copy">
                 <span>{stepLabel}</span>
@@ -1650,7 +1665,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
             </div>
           ) : null}
 
-          {step === 5 ? (
+          {!showIntro && step === 5 ? (
             <div className="bp-screen bp-screen--handoff">
               <div className="bp-screen__copy">
                 <span>{stepLabel}</span>
@@ -1776,7 +1791,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
           <div className="bp-footer-actions">
             <button
               className="bp-link-button"
-              disabled={step === 0}
+              disabled={showIntro || step === 0}
               onClick={goBack}
               type="button"
             >
@@ -1797,7 +1812,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
                 />
               ))}
             </div>
-            {step < lastStep ? (
+            {!showIntro && step < lastStep ? (
               <button
                 className="bp-button"
                 disabled={step === 0 && !emailIsValid}
@@ -1806,9 +1821,9 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
               >
                 {copy.footer.next}
               </button>
-            ) : (
+            ) : !showIntro ? (
               <span className="bp-footer-note">{copy.footer.done}</span>
-            )}
+            ) : null}
           </div>
         </div>
       </section>
