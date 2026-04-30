@@ -1809,17 +1809,6 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
             ) : (
               <span className="bp-footer-note">{copy.footer.done}</span>
             )}
-            {SUPABASE_URL && SUPABASE_ANON_KEY ? (
-              <span className="bp-footer-note">
-                {saveState === 'saving'
-                  ? copy.footer.saving
-                  : saveState === 'saved'
-                    ? copy.footer.saved
-                    : saveState === 'error'
-                      ? copy.footer.saveError
-                      : ''}
-              </span>
-            ) : null}
           </div>
         </div>
       </section>
