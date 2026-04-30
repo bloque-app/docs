@@ -1,6 +1,10 @@
 import { CodeBlockRuntime } from '@rspress/core/theme';
 import { useEffect, useState } from 'react';
 
+declare const __PUBLIC_SUPABASE_URL__: string;
+declare const __PUBLIC_SUPABASE_PUBLISHABLE_KEY__: string;
+declare const __PUBLIC_SUPABASE_TABLE__: string;
+
 type Product = {
   id: string;
   title: string;
@@ -104,6 +108,9 @@ type Copy = {
     back: string;
     next: string;
     done: string;
+    saving: string;
+    saved: string;
+    saveError: string;
   };
 };
 
@@ -145,7 +152,14 @@ const products: Product[] = [
       'Attach Bre-B and Polygon to the same ledger',
       'Track payout status and reconciliation events',
     ],
-    relevantPluginIds: ['breb', 'polygon', 'pix-account', 'us-account', 'mexico-account', 'europe-account'],
+    relevantPluginIds: [
+      'breb',
+      'polygon',
+      'pix-account',
+      'us-account',
+      'mexico-account',
+      'europe-account',
+    ],
   },
 ];
 
@@ -210,6 +224,9 @@ const copyByLocale: Record<Locale, Copy> = {
       back: 'Back',
       next: 'Next',
       done: 'Ready to build',
+      saving: 'Saving...',
+      saved: 'Saved',
+      saveError: 'Save failed',
     },
   },
   es: {
@@ -272,6 +289,9 @@ const copyByLocale: Record<Locale, Copy> = {
       back: 'Atras',
       next: 'Siguiente',
       done: 'Listo para construir',
+      saving: 'Guardando...',
+      saved: 'Guardado',
+      saveError: 'Error al guardar',
     },
   },
 };
@@ -521,8 +541,7 @@ const walkthroughStepsNonCardByLocale: Record<Locale, WalkthroughStep[]> = {
     },
     {
       title: 'Move money',
-      description:
-        'Fund the account and move money to the connected rails.',
+      description: 'Fund the account and move money to the connected rails.',
       focus: 'Transfer',
       filename: 'move-money.ts',
       lang: 'ts',
@@ -554,8 +573,7 @@ const walkthroughStepsNonCardByLocale: Record<Locale, WalkthroughStep[]> = {
     },
     {
       title: 'Mueve dinero',
-      description:
-        'Fondea la cuenta y mueve dinero a los rieles conectados.',
+      description: 'Fondea la cuenta y mueve dinero a los rieles conectados.',
       focus: 'Transferir',
       filename: 'move-money.ts',
       lang: 'ts',
@@ -894,6 +912,12 @@ const readUrlState = () => {
   };
 };
 
+const SUPABASE_URL = __PUBLIC_SUPABASE_URL__;
+const SUPABASE_ANON_KEY = __PUBLIC_SUPABASE_PUBLISHABLE_KEY__;
+const SUPABASE_TABLE = __PUBLIC_SUPABASE_TABLE__ || 'homepage_leads';
+
+type SaveState = 'idle' | 'saving' | 'saved' | 'error';
+
 const ProductWizard = () => {
   const locale: Locale =
     typeof window !== 'undefined' && window.location.pathname.startsWith('/en')
@@ -924,6 +948,8 @@ const ProductWizard = () => {
     () => readUrlState().integrationStep,
   );
   const [sandboxToken] = useState(() => readUrlState().sandboxToken);
+  const [saveState, setSaveState] = useState<SaveState>('idle');
+  const [sessionId, setSessionId] = useState('');
 
   const isCardProduct = selectedProduct.defaultMediums.includes('card');
   const effectiveSteps = isCardProduct ? [0, 1, 2, 3, 4, 5] : [0, 1, 3, 4, 5];
@@ -1036,8 +1062,12 @@ Build a ${selectedProduct.title} for ${cardBrandName} using @bloque/sdk.
 
 Customer identifier:
 ${email || 'customer@company.com'}
-${sandboxToken ? `\nSDK token (sandbox, ready to use):
-${sandboxToken}\n` : ''}
+${
+  sandboxToken
+    ? `\nSDK token (sandbox, ready to use):
+${sandboxToken}\n`
+    : ''
+}
 Selected account capabilities:
 ${selectedMediums.map((medium) => `- ${medium.name}: ${medium.description}`).join('\n')}
 
@@ -1051,6 +1081,20 @@ ${includesCard ? '5. Issue a virtual card connected to that ledger.\n' : ''}${se
 
 Use these docs while implementing:
 ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const storageKey = 'bloque-homepage-session-id';
+    const existing = window.localStorage.getItem(storageKey);
+    if (existing) {
+      setSessionId(existing);
+      return;
+    }
+
+    const nextId = crypto.randomUUID();
+    window.localStorage.setItem(storageKey, nextId);
+    setSessionId(nextId);
+  }, []);
 
   const chooseProduct = (product: Product) => {
     setSelectedProduct(product);
@@ -1093,7 +1137,9 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
     }
 
     const currentIdx = effectiveSteps.indexOf(step);
-    setStep(effectiveSteps[Math.min(currentIdx + 1, effectiveSteps.length - 1)]);
+    setStep(
+      effectiveSteps[Math.min(currentIdx + 1, effectiveSteps.length - 1)],
+    );
   };
 
   const goBack = () => {
@@ -1106,19 +1152,111 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
     const params = new URLSearchParams();
     if (step > 0) params.set('s', String(step));
     if (email) params.set('e', email);
-    if (selectedProduct.id !== products[0].id) params.set('p', selectedProduct.id);
+    if (selectedProduct.id !== products[0].id)
+      params.set('p', selectedProduct.id);
     const pluginsKey = [...selectedPluginIds].sort().join(',');
     const defaultKey = [...selectedProduct.defaultMediums].sort().join(',');
-    if (pluginsKey !== defaultKey) params.set('plugins', selectedPluginIds.join(','));
-    if (selectedStyle.id !== cardStyles[0].id) params.set('style', selectedStyle.id);
+    if (pluginsKey !== defaultKey)
+      params.set('plugins', selectedPluginIds.join(','));
+    if (selectedStyle.id !== cardStyles[0].id)
+      params.set('style', selectedStyle.id);
     if (brandName) params.set('brand', brandName);
-    if (primaryColor !== selectedStyle.primaryColor) params.set('pc', primaryColor.replace('#', ''));
-    if (accentColor !== selectedStyle.accentColor) params.set('ac', accentColor.replace('#', ''));
+    if (primaryColor !== selectedStyle.primaryColor)
+      params.set('pc', primaryColor.replace('#', ''));
+    if (accentColor !== selectedStyle.accentColor)
+      params.set('ac', accentColor.replace('#', ''));
     if (integrationStep > 0) params.set('ws', String(integrationStep));
     if (sandboxToken) params.set('sandbox_token', sandboxToken);
     const qs = params.toString();
-    history.replaceState(null, '', qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
-  }, [step, email, selectedProduct, selectedPluginIds, selectedStyle, brandName, primaryColor, accentColor, integrationStep, sandboxToken]);
+    history.replaceState(
+      null,
+      '',
+      qs ? `${window.location.pathname}?${qs}` : window.location.pathname,
+    );
+  }, [
+    step,
+    email,
+    selectedProduct,
+    selectedPluginIds,
+    selectedStyle,
+    brandName,
+    primaryColor,
+    accentColor,
+    integrationStep,
+    sandboxToken,
+  ]);
+
+  useEffect(() => {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !sessionId || !emailIsValid) {
+      return;
+    }
+
+    const timeout = window.setTimeout(async () => {
+      setSaveState('saving');
+      try {
+        const payload = {
+          session_id: sessionId,
+          email,
+          locale,
+          step,
+          integration_step: integrationStep,
+          product_id: selectedProduct.id,
+          product_title: selectedProduct.title,
+          plugin_ids: selectedPluginIds,
+          card_style_id: selectedStyle.id,
+          brand_name: cardBrandName,
+          primary_color: primaryColor,
+          accent_color: accentColor,
+          includes_card: includesCard,
+          sandbox_token_present: Boolean(sandboxToken),
+          updated_at: new Date().toISOString(),
+        };
+
+        const response = await fetch(
+          `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`,
+          {
+            method: 'POST',
+            headers: {
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+              'Content-Type': 'application/json',
+              Prefer: 'return=minimal',
+            },
+            body: JSON.stringify(payload),
+          },
+        );
+
+        if (!response.ok) {
+          const body = await response.text();
+          throw new Error(
+            `Supabase save failed with status ${response.status}: ${body}`,
+          );
+        }
+
+        setSaveState('saved');
+      } catch (error) {
+        console.error(error);
+        setSaveState('error');
+      }
+    }, 450);
+
+    return () => window.clearTimeout(timeout);
+  }, [
+    sessionId,
+    emailIsValid,
+    email,
+    locale,
+    step,
+    integrationStep,
+    selectedProduct,
+    selectedPluginIds,
+    selectedStyle,
+    cardBrandName,
+    primaryColor,
+    accentColor,
+    includesCard,
+    sandboxToken,
+  ]);
 
   const copyCurrentCode = async () => {
     if (!navigator.clipboard) {
@@ -1317,9 +1455,10 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
               <div className="bp-plugin-builder">
                 <aside className="bp-plugin-list" aria-label="Plugin options">
                   {pluginCategories.map((category) => {
-                    const categoryPlugins = plugins.filter((p) =>
-                      category.pluginIds.includes(p.id) &&
-                      selectedProduct.relevantPluginIds.includes(p.id),
+                    const categoryPlugins = plugins.filter(
+                      (p) =>
+                        category.pluginIds.includes(p.id) &&
+                        selectedProduct.relevantPluginIds.includes(p.id),
                     );
                     if (categoryPlugins.length === 0) return null;
                     return (
@@ -1382,7 +1521,11 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
               <div className="bp-screen__copy">
                 <span>{stepLabel}</span>
                 <h2>{copy.code.title}</h2>
-                <p>{isCardProduct ? copy.code.description : copy.code.descriptionNoCard}</p>
+                <p>
+                  {isCardProduct
+                    ? copy.code.description
+                    : copy.code.descriptionNoCard}
+                </p>
               </div>
 
               <div className="bp-walkthrough">
@@ -1448,12 +1591,43 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
                     >
                       {copiedCode ? (
                         <>
-                          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 7L5 10L11 3"/></svg>
+                          <svg
+                            width="13"
+                            height="13"
+                            viewBox="0 0 13 13"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M2 7L5 10L11 3" />
+                          </svg>
                           {copy.code.copied}
                         </>
                       ) : (
                         <>
-                          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4.5" y="1.5" width="7" height="9" rx="1.5"/><path d="M8.5 1.5H2.5a1 1 0 0 0-1 1v9"/></svg>
+                          <svg
+                            width="13"
+                            height="13"
+                            viewBox="0 0 13 13"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <rect
+                              x="4.5"
+                              y="1.5"
+                              width="7"
+                              height="9"
+                              rx="1.5"
+                            />
+                            <path d="M8.5 1.5H2.5a1 1 0 0 0-1 1v9" />
+                          </svg>
                           {copy.code.copy}
                         </>
                       )}
@@ -1482,9 +1656,13 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
                 <span>{stepLabel}</span>
                 <h2>
                   {locale === 'en' ? (
-                    <>Hand this to <em>your</em> agent.</>
+                    <>
+                      Hand this to <em>your</em> agent.
+                    </>
                   ) : (
-                    <>Pásalo a <em>tu</em> agente.</>
+                    <>
+                      Pásalo a <em>tu</em> agente.
+                    </>
                   )}
                 </h2>
                 <p>{copy.handoff.description}</p>
@@ -1531,12 +1709,43 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
                     >
                       {copiedAgentPrompt ? (
                         <>
-                          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 7L5 10L11 3"/></svg>
+                          <svg
+                            width="13"
+                            height="13"
+                            viewBox="0 0 13 13"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M2 7L5 10L11 3" />
+                          </svg>
                           {copy.handoff.copiedPrompt}
                         </>
                       ) : (
                         <>
-                          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4.5" y="1.5" width="7" height="9" rx="1.5"/><path d="M8.5 1.5H2.5a1 1 0 0 0-1 1v9"/></svg>
+                          <svg
+                            width="13"
+                            height="13"
+                            viewBox="0 0 13 13"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <rect
+                              x="4.5"
+                              y="1.5"
+                              width="7"
+                              height="9"
+                              rx="1.5"
+                            />
+                            <path d="M8.5 1.5H2.5a1 1 0 0 0-1 1v9" />
+                          </svg>
                           {copy.handoff.copyPrompt}
                         </>
                       )}
@@ -1582,7 +1791,10 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
               aria-valuenow={stepPosition + 1}
             >
               {effectiveSteps.map((_, idx) => (
-                <span className={idx <= stepPosition ? 'is-active' : ''} key={idx} />
+                <span
+                  className={idx <= stepPosition ? 'is-active' : ''}
+                  key={idx}
+                />
               ))}
             </div>
             {step < lastStep ? (
@@ -1597,6 +1809,17 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
             ) : (
               <span className="bp-footer-note">{copy.footer.done}</span>
             )}
+            {SUPABASE_URL && SUPABASE_ANON_KEY ? (
+              <span className="bp-footer-note">
+                {saveState === 'saving'
+                  ? copy.footer.saving
+                  : saveState === 'saved'
+                    ? copy.footer.saved
+                    : saveState === 'error'
+                      ? copy.footer.saveError
+                      : ''}
+              </span>
+            ) : null}
           </div>
         </div>
       </section>
