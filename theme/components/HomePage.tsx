@@ -1277,6 +1277,12 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
   return (
     <main className="bloque-product bp-shell">
       <section className="bp-wizard" aria-label="Bloque product wizard">
+        <nav className="bp-top-links" aria-label="Documentation links">
+          <a href="/en/">English</a>
+          <a href="/es/">Español</a>
+          <a href="/en/sdk/guide/start/getting-started">SDK</a>
+          <a href="/en/pay/guide/start/getting-started">Pay</a>
+        </nav>
         <div className="bp-wizard__body">
           {showIntro ? (
             <div className="bp-screen bp-screen--email">
@@ -1781,24 +1787,12 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
             <span>{copy.footer.summary}</span>
           </div>
 
-          <nav
-            className="bp-footer-links bp-footer-links--desktop"
-            aria-label="Documentation links"
-          >
+          <nav className="bp-footer-links" aria-label="Documentation links">
             <a href="/en/">English</a>
             <a href="/es/">Español</a>
             <a href="/en/sdk/guide/start/getting-started">SDK</a>
             <a href="/en/pay/guide/start/getting-started">Pay</a>
           </nav>
-          <details className="bp-footer-links-menu">
-            <summary>Docs</summary>
-            <div className="bp-footer-links bp-footer-links--mobile">
-              <a href="/en/">English</a>
-              <a href="/es/">Español</a>
-              <a href="/en/sdk/guide/start/getting-started">SDK</a>
-              <a href="/en/pay/guide/start/getting-started">Pay</a>
-            </div>
-          </details>
 
           <div className="bp-footer-actions">
             <button
