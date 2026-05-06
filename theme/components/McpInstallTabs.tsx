@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 type TabId = 'cursor' | 'vscode' | 'claude' | 'chatgpt' | 'other';
+type Locale = 'es' | 'en';
 
 interface InstallTab {
   id: TabId;
@@ -12,31 +13,37 @@ interface InstallTab {
   notes?: string[];
 }
 
+interface McpInstallTabsProps {
+  locale?: Locale;
+}
+
 const BLOQUE_URL = 'http://api.bloque.app/mcp';
 
-const tabs: InstallTab[] = [
-  {
-    id: 'cursor',
-    label: 'Cursor',
-    title: 'Install in Cursor',
-    description:
-      'Open Cursor and add Bloque MCP. You can also copy this setup into ~/.cursor/mcp.json.',
-    codeLabel: '~/.cursor/mcp.json',
-    code: `{
+const tabsByLocale: Record<Locale, InstallTab[]> = {
+  en: [
+    {
+      id: 'cursor',
+      label: 'Cursor',
+      title: 'Install in Cursor',
+      description:
+        'Open Cursor and add Bloque MCP. You can also copy this setup into ~/.cursor/mcp.json.',
+      codeLabel: '~/.cursor/mcp.json',
+      code: `{
   "mcpServers": {
     "bloque": {
       "url": "${BLOQUE_URL}"
     }
   }
 }`,
-  },
-  {
-    id: 'vscode',
-    label: 'VS Code',
-    title: 'Install in VS Code',
-    description: 'Add the MCP server into .vscode/mcp.json in your workspace.',
-    codeLabel: '.vscode/mcp.json',
-    code: `{
+    },
+    {
+      id: 'vscode',
+      label: 'VS Code',
+      title: 'Install in VS Code',
+      description:
+        'Add the MCP server into .vscode/mcp.json in your workspace.',
+      codeLabel: '.vscode/mcp.json',
+      code: `{
   "servers": {
     "bloque": {
       "type": "http",
@@ -44,48 +51,122 @@ const tabs: InstallTab[] = [
     }
   }
 }`,
-  },
-  {
-    id: 'claude',
-    label: 'Claude Code',
-    title: 'Install in Claude Code',
-    description:
-      'Register the server with Claude CLI, then authenticate with Bloque.',
-    codeLabel: 'Command Line',
-    code: `claude mcp add --transport http bloque ${BLOQUE_URL}\n\nclaude /mcp`,
-  },
-  {
-    id: 'chatgpt',
-    label: 'ChatGPT',
-    title: 'Install in ChatGPT',
-    description:
-      'Enable MCP custom connectors in ChatGPT and create one for Bloque.',
-    notes: [
-      'Available on Pro, Plus, Business, Enterprise, or Education plans.',
-      `Server URL: ${BLOQUE_URL}`,
-      'Connection mechanism: OAuth',
-      'Compatible with OpenAI Responses API agent flows.',
-    ],
-  },
-  {
-    id: 'other',
-    label: 'Other',
-    title: 'Install in Other MCP Clients',
-    description:
-      'Use OAuth when available. If your client does not support OAuth, use a restricted API key.',
-    codeLabel: 'JSON snippet',
-    code: `"bloque": {
+    },
+    {
+      id: 'claude',
+      label: 'Claude Code',
+      title: 'Install in Claude Code',
+      description:
+        'Register the server with Claude CLI, then authenticate with Bloque.',
+      codeLabel: 'Command Line',
+      code: `claude mcp add --transport http bloque ${BLOQUE_URL}\n\nclaude /mcp`,
+    },
+    {
+      id: 'chatgpt',
+      label: 'ChatGPT',
+      title: 'Install in ChatGPT',
+      description:
+        'Enable MCP custom connectors in ChatGPT and create one for Bloque.',
+      notes: [
+        'Available on Pro, Plus, Business, Enterprise, or Education plans.',
+        `Server URL: ${BLOQUE_URL}`,
+        'Connection mechanism: OAuth',
+        'Compatible with OpenAI Responses API agent flows.',
+      ],
+    },
+    {
+      id: 'other',
+      label: 'Other',
+      title: 'Install in Other MCP Clients',
+      description:
+        'Use OAuth when available. If your client does not support OAuth, use a restricted API key.',
+      codeLabel: 'JSON snippet',
+      code: `"bloque": {
   "url": "${BLOQUE_URL}",
   "headers": {
     "Authorization": "Bearer BLOQUE_API_KEY"
   }
 }`,
-    notes: [
-      'Recommended: OAuth for production.',
-      'If you use bearer tokens, apply least-privilege scope.',
-    ],
-  },
-];
+      notes: [
+        'Recommended: OAuth for production.',
+        'If you use bearer tokens, apply least-privilege scope.',
+      ],
+    },
+  ],
+  es: [
+    {
+      id: 'cursor',
+      label: 'Cursor',
+      title: 'Instalar en Cursor',
+      description:
+        'Abre Cursor y agrega Bloque MCP. También puedes copiar esta configuración en ~/.cursor/mcp.json.',
+      codeLabel: '~/.cursor/mcp.json',
+      code: `{
+  "mcpServers": {
+    "bloque": {
+      "url": "${BLOQUE_URL}"
+    }
+  }
+}`,
+    },
+    {
+      id: 'vscode',
+      label: 'VS Code',
+      title: 'Instalar en VS Code',
+      description:
+        'Agrega el servidor MCP en .vscode/mcp.json dentro de tu workspace.',
+      codeLabel: '.vscode/mcp.json',
+      code: `{
+  "servers": {
+    "bloque": {
+      "type": "http",
+      "url": "${BLOQUE_URL}"
+    }
+  }
+}`,
+    },
+    {
+      id: 'claude',
+      label: 'Claude Code',
+      title: 'Instalar en Claude Code',
+      description:
+        'Registra el servidor con Claude CLI y luego autentícate con Bloque.',
+      codeLabel: 'Línea de comandos',
+      code: `claude mcp add --transport http bloque ${BLOQUE_URL}\n\nclaude /mcp`,
+    },
+    {
+      id: 'chatgpt',
+      label: 'ChatGPT',
+      title: 'Instalar en ChatGPT',
+      description:
+        'Habilita conectores MCP personalizados en ChatGPT y crea uno para Bloque.',
+      notes: [
+        'Disponible en planes Pro, Plus, Business, Enterprise o Education.',
+        `URL del servidor: ${BLOQUE_URL}`,
+        'Mecanismo de conexión: OAuth',
+        'Compatible con flujos de agentes usando OpenAI Responses API.',
+      ],
+    },
+    {
+      id: 'other',
+      label: 'Otro',
+      title: 'Instalar en otros clientes MCP',
+      description:
+        'Usa OAuth cuando esté disponible. Si tu cliente no soporta OAuth, usa una API key restringida.',
+      codeLabel: 'Snippet JSON',
+      code: `"bloque": {
+  "url": "${BLOQUE_URL}",
+  "headers": {
+    "Authorization": "Bearer BLOQUE_API_KEY"
+  }
+}`,
+      notes: [
+        'Recomendado: OAuth para producción.',
+        'Si usas bearer tokens, aplica el principio de mínimo privilegio.',
+      ],
+    },
+  ],
+};
 
 type ThemeMode = 'dark' | 'light';
 
@@ -133,7 +214,7 @@ const paletteByMode: Record<
   },
 };
 
-export const McpInstallTabs = () => {
+export const McpInstallTabs = ({ locale = 'en' }: McpInstallTabsProps) => {
   const [active, setActive] = useState<TabId>('cursor');
   const [mode, setMode] = useState<ThemeMode>('dark');
 
@@ -149,9 +230,10 @@ export const McpInstallTabs = () => {
     return () => mq.removeEventListener('change', update);
   }, []);
 
+  const tabs = tabsByLocale[locale];
   const selected = useMemo(
     () => tabs.find((tab) => tab.id === active) ?? tabs[0],
-    [active],
+    [active, tabs],
   );
 
   const palette = paletteByMode[mode];
@@ -166,21 +248,9 @@ export const McpInstallTabs = () => {
         background: `radial-gradient(120% 180% at 12% 0%, ${palette.accentSoft} 0%, transparent 52%), ${palette.surface}`,
       }}
     >
-      <div
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 8,
-          marginBottom: 14,
-        }}
-      >
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
         <span
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: 999,
-            background: palette.accent,
-          }}
+          style={{ width: 6, height: 6, borderRadius: 999, background: palette.accent }}
         />
         <span
           style={{
@@ -191,13 +261,13 @@ export const McpInstallTabs = () => {
             color: palette.subtle,
           }}
         >
-          Bloque MCP Install
+          {locale === 'es' ? 'Instalación Bloque MCP' : 'Bloque MCP Install'}
         </span>
       </div>
 
       <div
         role="tablist"
-        aria-label="MCP install tabs"
+        aria-label={locale === 'es' ? 'Pestañas de instalación MCP' : 'MCP install tabs'}
         style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}
       >
         {tabs.map((tab) => {
@@ -277,7 +347,7 @@ export const McpInstallTabs = () => {
                   background: palette.accent,
                 }}
               />
-              {selected.codeLabel ?? 'Config'}
+              {selected.codeLabel ?? (locale === 'es' ? 'Configuración' : 'Config')}
             </div>
             <div
               style={{
