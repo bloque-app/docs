@@ -5,3 +5,26 @@ import { McpInstallTabs } from '@theme';
 Choose the agent where you want to install Bloque MCP and test the recommended configuration.
 
 <McpInstallTabs />
+
+## Tools
+
+The server currently exposes the following MCP tools. We recommend enabling human confirmation for sensitive actions.
+
+| Resource | Tool | SDK |
+| --- | --- | --- |
+| Base balance | `get_base_balance_ledger` | `accounts.list({ medium: "virtual" })` |
+| Base balance | `create_virtual_account` | `accounts.virtual.create(...)` |
+| Balance | `get_balances_normalized` | `accounts.balances()` |
+| BRE-B | `list_breb_accounts` | `accounts.list({ medium: "breb" })` |
+| BRE-B | `create_breb_key` | `accounts.breb.createKey(...)` |
+| Account plugin | `add_account_plugin` | `accounts.breb.createKey(...)` |
+| BRE-B | `resolve_breb_key` | `accounts.breb.resolveKey(...)` |
+| BRE-B | `decode_breb_qr` | `accounts.breb.decodeQr(...)` |
+| BRE-B | `suspend_breb_key` | `accounts.breb.suspendKey(...)` |
+| BRE-B | `activate_breb_key` | `accounts.breb.activateKey(...)` |
+| BRE-B | `delete_breb_key` | `accounts.breb.deleteKey(...)` |
+| BRE-B orders | `create_breb_order` | `accounts.breb.resolveKey(...)`, `swap.findRates(...)`, `swap.breb.create(...)` |
+
+Sources:
+- `/home/nexckycort/bloque/payment-rails/projects/mcp/src/mcp/tools/breb.tool.ts`
+- `/home/nexckycort/bloque/payment-rails/projects/mcp/src/mcp/tools/balances.tool.ts`
