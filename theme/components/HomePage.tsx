@@ -1282,6 +1282,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
           <a href="/es/">Español</a>
           <a href="/en/sdk/guide/start/getting-started">SDK</a>
           <a href="/en/pay/guide/start/getting-started">Pay</a>
+          <a href="/en/mcp">MCP</a>
         </nav>
         <div className="bp-wizard__body">
           {showIntro ? (
@@ -1792,6 +1793,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
             <a href="/es/">Español</a>
             <a href="/en/sdk/guide/start/getting-started">SDK</a>
             <a href="/en/pay/guide/start/getting-started">Pay</a>
+            <a href="/en/mcp">MCP</a>
           </nav>
 
           <div className="bp-footer-actions">

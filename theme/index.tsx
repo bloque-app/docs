@@ -37,3 +37,4 @@ export { ProgressPath } from './components/ProgressPath';
 export { QuestHeader } from './components/QuestHeader';
 export { SwapFlowDiagram } from './components/SwapFlowDiagram';
 export { ToolStack } from './components/tool-stack';
+export { McpInstallTabs } from './components/McpInstallTabs';

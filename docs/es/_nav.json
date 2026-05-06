@@ -8,5 +8,10 @@
     "text": "Payment",
     "link": "/pay/guide/start/introduction",
     "activeMatch": "/pay/guide/"
+  },
+  {
+    "text": "MCP",
+    "link": "/mcp",
+    "activeMatch": "/mcp"
   }
 ]
