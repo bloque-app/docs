@@ -124,4 +124,4 @@ This ensures the documentation is always in sync with the latest SDK version.
 
 ## Links
 
-- Website: [docs.bloque.app](https://docs.bloque.app)
+- Website: [docs.bloque.sh](https://docs.bloque.sh)

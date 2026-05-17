@@ -1,10 +1,10 @@
-import * as path from 'node:path';
 import { defineConfig } from '@rspress/core';
 import { pluginPreview } from '@rspress/plugin-preview';
 import { pluginSitemap } from '@rspress/plugin-sitemap';
+import * as path from 'node:path';
 import { pluginMermaid } from './plugins/plugin-mermaid';
 
-const PUBLISH_URL = 'https://docs.bloque.app';
+const PUBLISH_URL = 'https://docs.bloque.sh';
 
 export default defineConfig({
   root: path.join(__dirname, 'docs'),
