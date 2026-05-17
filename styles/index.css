@@ -770,6 +770,35 @@ p, li {
   color: #0d0c17;
 }
 
+.bp-top-links {
+  display: none;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.6rem 0.15rem;
+}
+
+.bp-top-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0.3rem 0.55rem;
+  color: #5a5770;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  background: rgba(250, 249, 252, 0.85);
+  border: 1px solid rgba(13, 12, 23, 0.1);
+  border-radius: 999px;
+}
+
+.bp-top-links a:hover {
+  color: #7c3aed;
+  border-color: rgba(124, 58, 237, 0.35);
+  background: rgba(167, 139, 250, 0.1);
+}
+
 .bp-wizard:has(.bp-screen--walkthrough),
 .bp-wizard:has(.bp-screen--handoff) {
   width: min(1360px, 100%);
@@ -1832,6 +1861,27 @@ p, li {
   justify-content: center;
 }
 
+.bp-footer-links-menu {
+  display: none;
+}
+
+.bp-footer-links-menu summary {
+  list-style: none;
+  cursor: pointer;
+  color: #5a5770;
+  font-size: 0.82rem;
+  font-weight: 600;
+  user-select: none;
+}
+
+.bp-footer-links-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.bp-footer-links-menu[open] summary {
+  margin-bottom: 0.4rem;
+}
+
 .bp-footer-links a {
   display: inline-flex;
   align-items: center;
@@ -1943,6 +1993,17 @@ p, li {
 
   .bp-wizard {
     height: auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .bp-top-links {
+    display: flex;
+    justify-content: flex-start;
+    padding-inline: 0.4rem;
+  }
+
+  .bp-footer-links {
+    display: none;
   }
 
   .bp-wizard__body {
@@ -1967,11 +2028,29 @@ p, li {
     align-items: stretch;
     flex-direction: column;
   }
+
+  .bp-footer-links--desktop {
+    display: none;
+  }
+
+  .bp-footer-links-menu {
+    display: block;
+  }
+
+  .bp-footer-links--mobile {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 560px) {
   .bp-shell {
     padding: 0.5rem;
+  }
+
+  .bp-top-links a {
+    font-size: 0.74rem;
+    min-height: 26px;
+    padding: 0.24rem 0.48rem;
   }
 
   .bp-card {
@@ -2005,8 +2084,8 @@ p, li {
     grid-template-columns: 1fr;
   }
 
-  .bp-footer-links {
-    justify-content: flex-start;
+  .bp-footer-links-menu summary {
+    font-size: 0.78rem;
   }
 }
 

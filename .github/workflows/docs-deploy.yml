@@ -13,6 +13,10 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      PUBLIC_SUPABASE_TABLE: ${{ vars.PUBLIC_SUPABASE_TABLE }}
+      PUBLIC_SUPABASE_URL: ${{ vars.PUBLIC_SUPABASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2

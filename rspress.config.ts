@@ -5,6 +5,10 @@ import * as path from 'node:path';
 import { pluginMermaid } from './plugins/plugin-mermaid';
 
 const PUBLISH_URL = 'https://docs.bloque.sh';
+const PUBLIC_SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL ?? '';
+const PUBLIC_SUPABASE_PUBLISHABLE_KEY =
+  process.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '';
+const PUBLIC_SUPABASE_TABLE = process.env.PUBLIC_SUPABASE_TABLE ?? '';
 
 export default defineConfig({
   root: path.join(__dirname, 'docs'),
@@ -84,6 +88,13 @@ export default defineConfig({
   builderConfig: {
     source: {
       preEntry: ['./styles/index.css'],
+      define: {
+        __PUBLIC_SUPABASE_URL__: JSON.stringify(PUBLIC_SUPABASE_URL),
+        __PUBLIC_SUPABASE_PUBLISHABLE_KEY__: JSON.stringify(
+          PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+        ),
+        __PUBLIC_SUPABASE_TABLE__: JSON.stringify(PUBLIC_SUPABASE_TABLE),
+      },
     },
   },
 });
