@@ -1,5 +1,20 @@
 import { CodeBlockRuntime } from '@rspress/core/theme';
 import { useEffect, useState } from 'react';
+import {
+  type ModuleKind,
+  pluginIdToKind,
+} from '../lib/bloque-modules';
+import {
+  buildStarterGraph,
+  deserializeGraph,
+  graphToPluginIds,
+  type ProductFlowGraph,
+  serializeGraph,
+  syncGraphWithPlugins,
+  validateGraph,
+} from '../lib/flow-graph';
+import { FlowMiniPreview } from './flow-studio/FlowMiniPreview';
+import { FlowStudio } from './flow-studio/FlowStudio';
 
 declare const __PUBLIC_SUPABASE_URL__: string;
 declare const __PUBLIC_SUPABASE_PUBLISHABLE_KEY__: string;
@@ -82,6 +97,16 @@ type Copy = {
     title: string;
     description: string;
   };
+  composer: {
+    title: string;
+    description: string;
+    flowTab: string;
+    checklistTab: string;
+    flowHint: string;
+    incompleteLedger: string;
+    incompleteAttach: string;
+    previewLabel: string;
+  };
   code: {
     title: string;
     description: string;
@@ -111,6 +136,15 @@ type Copy = {
   };
 };
 
+const REGIONAL_RAIL_PLUGIN_IDS = [
+  'breb',
+  'polygon',
+  'pix-account',
+  'us-account',
+  'mexico-account',
+  'europe-account',
+] as const;
+
 const products: Product[] = [
   {
     id: 'consumer-wallet',
@@ -136,7 +170,7 @@ const products: Product[] = [
       'Issue a virtual card connected to one ledger',
       'Configure spending controls and transaction webhooks',
     ],
-    relevantPluginIds: ['card', 'polygon', 'us-account'],
+    relevantPluginIds: ['card', ...REGIONAL_RAIL_PLUGIN_IDS],
   },
   {
     id: 'merchant-payouts',
@@ -149,14 +183,7 @@ const products: Product[] = [
       'Attach Bre-B and Polygon to the same ledger',
       'Track payout status and reconciliation events',
     ],
-    relevantPluginIds: [
-      'breb',
-      'polygon',
-      'pix-account',
-      'us-account',
-      'mexico-account',
-      'europe-account',
-    ],
+    relevantPluginIds: [...REGIONAL_RAIL_PLUGIN_IDS],
   },
 ];
 
@@ -190,6 +217,20 @@ const copyByLocale: Record<Locale, Copy> = {
       title: 'Choose SDK plugins.',
       description:
         'Select the account capabilities to add after SDK initialization. Every option here maps to documented SDK calls.',
+    },
+    composer: {
+      title: 'Compose your product flow.',
+      description:
+        'Nodes are SDK modules. Edges show how rails and accounts attach to the shared ledger that holds the balance.',
+      flowTab: 'Flow Studio',
+      checklistTab: 'Checklist',
+      flowHint:
+        'Drag modules onto the canvas and connect them to the ledger. The generated code follows the topology.',
+      incompleteLedger:
+        'Add a ledger node — it holds the shared balance.',
+      incompleteAttach:
+        'Attach at least one module (card or rail) to the ledger.',
+      previewLabel: 'Your flow',
     },
     code: {
       title: 'Build from the code.',
@@ -252,6 +293,20 @@ const copyByLocale: Record<Locale, Copy> = {
       title: 'Elige plugins del SDK.',
       description:
         'Selecciona las capacidades de cuentas que se agregan despues de inicializar el SDK. Cada opcion apunta a llamadas documentadas.',
+    },
+    composer: {
+      title: 'Compón el flujo de tu producto.',
+      description:
+        'Los nodos son módulos del SDK. Las conexiones muestran cómo los rieles y cuentas se anclan al ledger que sostiene el balance.',
+      flowTab: 'Flow Studio',
+      checklistTab: 'Checklist',
+      flowHint:
+        'Arrastra módulos al lienzo y conéctalos al ledger. El código generado sigue la topología.',
+      incompleteLedger:
+        'Agrega un nodo ledger — sostiene el balance compartido.',
+      incompleteAttach:
+        'Conecta al menos un módulo (tarjeta o riel) al ledger.',
+      previewLabel: 'Tu flujo',
     },
     code: {
       title: 'Construye desde el codigo.',
@@ -590,15 +645,16 @@ const getAccountCreationBlocks = ({
 
   if (pluginIds.includes('breb')) {
     blocks.push(`// BRE-B
-const brebAccount = await session.accounts.breb.create(
-  {
-    ledgerId: pocket.ledgerId,
-    keyType: 'EMAIL',
-    key: ${JSON.stringify(email)},
-    displayName: ${JSON.stringify(brandName)},
-  },
-  { waitLedger: true },
-);`);
+const { data: brebAccount, error: brebError } = await session.accounts.breb.createKey({
+  ledgerId: pocket.ledgerId,
+  keyType: 'EMAIL',
+  key: ${JSON.stringify(email)},
+  displayName: ${JSON.stringify(brandName)},
+});
+
+if (brebError) {
+  throw new Error(brebError.message);
+}`);
     returnEntries.push('    brebAccount,');
   }
 
@@ -887,19 +943,27 @@ const readUrlState = () => {
   const styleId = p.get('style');
   const style = cardStyles.find((s) => s.id === styleId) ?? cardStyles[0];
   const pluginsRaw = p.get('plugins');
+  const pluginIds = pluginsRaw
+    ? pluginsRaw.split(',').filter(Boolean)
+    : product.defaultMediums;
+  const flowRaw = p.get('flow');
+  const flowGraph =
+    (flowRaw ? deserializeGraph(flowRaw) : null) ??
+    buildStarterGraph(pluginIds);
+  const composerTab = p.get('ct') === 'list' ? 'list' : 'flow';
   return {
-    step: Math.max(0, Math.min(4, Number(p.get('s')) || 0)),
+    step: Math.max(0, Math.min(5, Number(p.get('s')) || 0)),
     email: p.get('e') ?? '',
     product,
-    pluginIds: pluginsRaw
-      ? pluginsRaw.split(',').filter(Boolean)
-      : product.defaultMediums,
+    pluginIds,
     style,
     brandName: p.get('brand') ?? '',
     primaryColor: p.get('pc') ? `#${p.get('pc')}` : style.primaryColor,
     accentColor: p.get('ac') ? `#${p.get('ac')}` : style.accentColor,
     integrationStep: Math.max(0, Number(p.get('ws')) || 0),
     sandboxToken: p.get('sandbox_token') ?? '',
+    flowGraph,
+    composerTab: composerTab as 'flow' | 'list',
   };
 };
 
@@ -937,6 +1001,12 @@ const ProductWizard = () => {
     () => readUrlState().integrationStep,
   );
   const [sandboxToken] = useState(() => readUrlState().sandboxToken);
+  const [flowGraph, setFlowGraph] = useState<ProductFlowGraph>(
+    () => readUrlState().flowGraph,
+  );
+  const [composerTab, setComposerTab] = useState<'flow' | 'list'>(
+    () => readUrlState().composerTab,
+  );
   const [sessionId, setSessionId] = useState('');
   const [showIntro, setShowIntro] = useState(true);
   const [introFading, setIntroFading] = useState(false);
@@ -1040,6 +1110,14 @@ pnpm add @bloque/sdk`,
           },
         ]
       : []),
+    ...(selectedPluginIds.includes('us-account')
+      ? [
+          {
+            label: 'US accounts',
+            href: `${docsPrefix}/sdk/guide/accounts/us`,
+          },
+        ]
+      : []),
     {
       label: 'Transfers',
       href: `${docsPrefix}/sdk/guide/accounts/transfers`,
@@ -1099,6 +1177,7 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
   const chooseProduct = (product: Product) => {
     setSelectedProduct(product);
     setSelectedPluginIds(product.defaultMediums);
+    setFlowGraph(buildStarterGraph(product.defaultMediums));
     if (!product.defaultMediums.includes('card') && step === 2) {
       setStep(3);
     }
@@ -1107,13 +1186,50 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
   const togglePlugin = (pluginId: string) => {
     setCopiedCode(false);
     setSelectedPluginIds((current) => {
-      if (current.includes(pluginId)) {
-        return current.filter((id) => id !== pluginId);
-      }
-
-      return [...current, pluginId];
+      const next = current.includes(pluginId)
+        ? current.filter((id) => id !== pluginId)
+        : [...current, pluginId];
+      setFlowGraph((graph) => syncGraphWithPlugins(graph, next));
+      return next;
     });
   };
+
+  const handleFlowChange = (next: ProductFlowGraph) => {
+    setFlowGraph(next);
+    const derived = graphToPluginIds(next);
+    setSelectedPluginIds((current) => {
+      if (
+        current.length === derived.length &&
+        current.every((id) => derived.includes(id))
+      ) {
+        return current;
+      }
+      return derived;
+    });
+  };
+
+  const flowValidation = validateGraph(flowGraph);
+  const flowIrrelevantKinds: Set<ModuleKind> = (() => {
+    const supported = new Set<ModuleKind>();
+    for (const pluginId of selectedProduct.relevantPluginIds) {
+      const kind = pluginIdToKind(pluginId);
+      if (kind) supported.add(kind);
+    }
+    const out = new Set<ModuleKind>();
+    const allPluginKinds: ModuleKind[] = [
+      'card',
+      'breb',
+      'polygon',
+      'us-account',
+      'pix-account',
+      'mexico-account',
+      'europe-account',
+    ];
+    for (const kind of allPluginKinds) {
+      if (!supported.has(kind)) out.add(kind);
+    }
+    return out;
+  })();
 
   const goWalkthroughNext = () => {
     setIntegrationStep((current) =>
@@ -1133,6 +1249,9 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
 
   const goNext = () => {
     if (step === 0 && !emailIsValid) {
+      return;
+    }
+    if (step === 3 && !flowValidation.isReady) {
       return;
     }
 
@@ -1167,6 +1286,14 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
       params.set('ac', accentColor.replace('#', ''));
     if (integrationStep > 0) params.set('ws', String(integrationStep));
     if (sandboxToken) params.set('sandbox_token', sandboxToken);
+    if (composerTab === 'list') params.set('ct', 'list');
+    const starterKey = serializeGraph(
+      buildStarterGraph(selectedProduct.defaultMediums),
+    );
+    const currentKey = serializeGraph(flowGraph);
+    if (currentKey && currentKey !== starterKey) {
+      params.set('flow', currentKey);
+    }
     const qs = params.toString();
     history.replaceState(
       null,
@@ -1184,6 +1311,8 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
     accentColor,
     integrationStep,
     sandboxToken,
+    composerTab,
+    flowGraph,
   ]);
 
   useEffect(() => {
@@ -1467,74 +1596,121 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
           ) : null}
 
           {!showIntro && step === 3 ? (
-            <div className="bp-screen bp-screen--plugins">
+            <div className="bp-screen bp-screen--composer">
               <div className="bp-screen__copy">
                 <span>{stepLabel}</span>
-                <h2>{copy.plugins.title}</h2>
-                <p>{copy.plugins.description}</p>
+                <h2>{copy.composer.title}</h2>
+                <p>{copy.composer.description}</p>
               </div>
 
-              <div className="bp-plugin-builder">
-                <aside className="bp-plugin-list" aria-label="Plugin options">
-                  {pluginCategories.map((category) => {
-                    const categoryPlugins = plugins.filter(
-                      (p) =>
-                        category.pluginIds.includes(p.id) &&
-                        selectedProduct.relevantPluginIds.includes(p.id),
-                    );
-                    if (categoryPlugins.length === 0) return null;
-                    return (
-                      <div key={category.id} className="bp-plugin-category">
-                        <div className="bp-plugin-category__header">
-                          {category.flag && (
-                            <span
-                              className="bp-plugin-category__flag"
-                              aria-hidden="true"
-                            >
-                              {category.flag}
-                            </span>
-                          )}
-                          <span className="bp-plugin-category__label">
-                            {category.label}
-                          </span>
-                        </div>
-                        <div className="bp-plugin-category__items">
-                          {categoryPlugins.map((plugin) => (
-                            <label
-                              className={`bp-plugin-item ${
-                                selectedPluginIds.includes(plugin.id)
-                                  ? 'is-active'
-                                  : ''
-                              }`}
-                              key={plugin.id}
-                              style={{
-                                '--bp-plugin-accent': plugin.accentColor,
-                                '--bp-plugin-bg': plugin.backgroundColor,
-                              }}
-                            >
-                              <input
-                                checked={selectedPluginIds.includes(plugin.id)}
-                                onChange={() => togglePlugin(plugin.id)}
-                                type="checkbox"
-                              />
+              <div
+                className="bp-composer-tabs"
+                role="tablist"
+                aria-label={copy.composer.title}
+              >
+                <button
+                  className={`bp-composer-tab ${
+                    composerTab === 'flow' ? 'is-active' : ''
+                  }`}
+                  onClick={() => setComposerTab('flow')}
+                  role="tab"
+                  aria-selected={composerTab === 'flow'}
+                  type="button"
+                >
+                  {copy.composer.flowTab}
+                </button>
+                <button
+                  className={`bp-composer-tab ${
+                    composerTab === 'list' ? 'is-active' : ''
+                  }`}
+                  onClick={() => setComposerTab('list')}
+                  role="tab"
+                  aria-selected={composerTab === 'list'}
+                  type="button"
+                >
+                  {copy.composer.checklistTab}
+                </button>
+                {!flowValidation.isReady ? (
+                  <output className="bp-composer-validation">
+                    {!flowValidation.hasLedger
+                      ? copy.composer.incompleteLedger
+                      : copy.composer.incompleteAttach}
+                  </output>
+                ) : null}
+              </div>
+
+              {composerTab === 'flow' ? (
+                <FlowStudio
+                  locale={locale}
+                  graph={flowGraph}
+                  onChange={handleFlowChange}
+                  irrelevantKinds={flowIrrelevantKinds}
+                />
+              ) : (
+                <div className="bp-plugin-builder">
+                  <aside className="bp-plugin-list" aria-label="Plugin options">
+                    {pluginCategories.map((category) => {
+                      const categoryPlugins = plugins.filter(
+                        (p) =>
+                          category.pluginIds.includes(p.id) &&
+                          selectedProduct.relevantPluginIds.includes(p.id),
+                      );
+                      if (categoryPlugins.length === 0) return null;
+                      return (
+                        <div key={category.id} className="bp-plugin-category">
+                          <div className="bp-plugin-category__header">
+                            {category.flag && (
                               <span
-                                className="bp-plugin-item__check"
+                                className="bp-plugin-category__flag"
                                 aria-hidden="true"
                               >
-                                <span />
+                                {category.flag}
                               </span>
-                              <span className="bp-plugin-item__content">
-                                <strong>{plugin.name}</strong>
-                                <small>{plugin.description}</small>
-                              </span>
-                            </label>
-                          ))}
+                            )}
+                            <span className="bp-plugin-category__label">
+                              {category.label}
+                            </span>
+                          </div>
+                          <div className="bp-plugin-category__items">
+                            {categoryPlugins.map((plugin) => (
+                              <label
+                                className={`bp-plugin-item ${
+                                  selectedPluginIds.includes(plugin.id)
+                                    ? 'is-active'
+                                    : ''
+                                }`}
+                                key={plugin.id}
+                                style={{
+                                  '--bp-plugin-accent': plugin.accentColor,
+                                  '--bp-plugin-bg': plugin.backgroundColor,
+                                }}
+                              >
+                                <input
+                                  checked={selectedPluginIds.includes(
+                                    plugin.id,
+                                  )}
+                                  onChange={() => togglePlugin(plugin.id)}
+                                  type="checkbox"
+                                />
+                                <span
+                                  className="bp-plugin-item__check"
+                                  aria-hidden="true"
+                                >
+                                  <span />
+                                </span>
+                                <span className="bp-plugin-item__content">
+                                  <strong>{plugin.name}</strong>
+                                  <small>{plugin.description}</small>
+                                </span>
+                              </label>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </aside>
-              </div>
+                      );
+                    })}
+                  </aside>
+                </div>
+              )}
             </div>
           ) : null}
 
@@ -1549,6 +1725,18 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
                     : copy.code.descriptionNoCard}
                 </p>
               </div>
+
+              {flowGraph.nodes.length > 0 ? (
+                <section
+                  className="bp-flow-preview"
+                  aria-label={copy.composer.previewLabel}
+                >
+                  <div className="bp-flow-preview__header">
+                    <strong>{copy.composer.previewLabel}</strong>
+                  </div>
+                  <FlowMiniPreview locale={locale} graph={flowGraph} />
+                </section>
+              ) : null}
 
               <div className="bp-walkthrough">
                 <section className="bp-walkthrough-panel">
@@ -1823,7 +2011,10 @@ ${docsLinks.map((link) => `- ${link.label}: ${link.href}`).join('\n')}`;
             {!showIntro && step < lastStep ? (
               <button
                 className="bp-button"
-                disabled={step === 0 && !emailIsValid}
+                disabled={
+                  (step === 0 && !emailIsValid) ||
+                  (step === 3 && !flowValidation.isReady)
+                }
                 onClick={goNext}
                 type="button"
               >

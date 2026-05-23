@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 @import 'tailwindcss';
+@import '@xyflow/react/dist/style.css';
 @import './mermaid.css';
 
 /* ─────────────────────────────────────────────
@@ -800,7 +801,8 @@ p, li {
 }
 
 .bp-wizard:has(.bp-screen--walkthrough),
-.bp-wizard:has(.bp-screen--handoff) {
+.bp-wizard:has(.bp-screen--handoff),
+.bp-wizard:has(.bp-screen--composer) {
   width: min(1360px, 100%);
 }
 
@@ -1950,6 +1952,7 @@ p, li {
 
   .bp-screen--studio,
   .bp-screen--plugins,
+  .bp-screen--composer,
   .bp-screen--walkthrough,
   .bp-screen--handoff,
   .bp-card-studio,
@@ -2972,5 +2975,518 @@ p, li {
   .bc-panel-header,
   .bc-quest-list h2 {
     font-size: 0.58rem;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   FLOW STUDIO
+   Node graph composer used in ProductWizard step 3.
+   Lives on a dark surface; uses Bloque violet accents.
+───────────────────────────────────────────── */
+
+.bp-screen--composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: clamp(0.8rem, 1.4vw, 1.2rem);
+  min-height: 0;
+  align-content: stretch;
+}
+
+.bp-screen--composer .bp-screen__copy {
+  max-width: 740px;
+}
+
+.bp-screen--composer .bp-screen__copy h2 {
+  max-width: 640px;
+  font-size: clamp(1.55rem, 2.8vw, 2.55rem);
+}
+
+.bp-screen--composer .bp-screen__copy p {
+  max-width: 640px;
+  font-size: 0.92rem;
+}
+
+.bp-composer-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem;
+  background: rgba(13, 12, 23, 0.045);
+  border: 1px solid rgba(13, 12, 23, 0.08);
+  border-radius: 999px;
+  width: fit-content;
+}
+
+.bp-composer-tab {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.95rem;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5a5770;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.bp-composer-tab:hover {
+  color: #0d0c17;
+}
+
+.bp-composer-tab.is-active {
+  color: #faf9fc;
+  background: #0d0c17;
+  box-shadow:
+    inset 0 0 0 1px rgba(167, 139, 250, 0.3),
+    0 4px 14px rgba(13, 12, 23, 0.15);
+}
+
+.bp-composer-validation {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.5rem;
+  padding: 0.35rem 0.7rem;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+}
+
+.bp-flow-studio {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: clamp(0.65rem, 1.2vw, 1rem);
+  min-height: 480px;
+  height: 100%;
+  background: #0d0c17;
+  border: 1px solid rgba(167, 139, 250, 0.18);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow:
+    0 1px 0 rgba(167, 139, 250, 0.08) inset,
+    0 24px 60px rgba(13, 12, 23, 0.18);
+}
+
+.bp-flow-palette {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.95rem 0.8rem 0.8rem;
+  background: rgba(20, 18, 36, 0.85);
+  border-right: 1px solid rgba(167, 139, 250, 0.12);
+  overflow-y: auto;
+}
+
+.bp-flow-palette__header {
+  display: grid;
+  gap: 0.15rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid rgba(167, 139, 250, 0.12);
+}
+
+.bp-flow-palette__header strong {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f3f0ff;
+}
+
+.bp-flow-palette__header span {
+  font-size: 0.65rem;
+  color: rgba(243, 240, 255, 0.55);
+}
+
+.bp-flow-palette__categories {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.bp-flow-palette__category {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.bp-flow-palette__category-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(243, 240, 255, 0.48);
+}
+
+.bp-flow-palette__items {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.bp-flow-palette__item {
+  appearance: none;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: center;
+  padding: 0.55rem 0.6rem;
+  text-align: left;
+  color: #f3f0ff;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(167, 139, 250, 0.16);
+  border-radius: 10px;
+  cursor: grab;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.bp-flow-palette__item:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--bp-node-accent, #a78bfa) 50%, transparent);
+  background: rgba(167, 139, 250, 0.08);
+}
+
+.bp-flow-palette__item:active:not(:disabled) {
+  cursor: grabbing;
+  transform: translateY(1px);
+}
+
+.bp-flow-palette__item.is-present,
+.bp-flow-palette__item:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.bp-flow-palette__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 0.4rem;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--bp-node-accent, #a78bfa);
+  background:
+    radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, var(--bp-node-accent, #a78bfa) 22%, transparent), transparent 65%),
+    rgba(13, 12, 23, 0.8);
+  border: 1px solid color-mix(in srgb, var(--bp-node-accent, #a78bfa) 38%, transparent);
+  border-radius: 8px;
+}
+
+.bp-flow-palette__copy {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.bp-flow-palette__copy strong {
+  font-size: 0.78rem;
+  color: #f3f0ff;
+  font-weight: 600;
+}
+
+.bp-flow-palette__copy small {
+  font-size: 0.65rem;
+  color: rgba(243, 240, 255, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bp-flow-canvas {
+  position: relative;
+  min-height: 480px;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(167, 139, 250, 0.08), transparent 70%),
+    #0d0c17;
+}
+
+.bp-flow-canvas .react-flow__renderer,
+.bp-flow-canvas .react-flow__viewport,
+.bp-flow-canvas .react-flow__pane {
+  background: transparent;
+}
+
+.bp-flow-canvas .react-flow__edge-path {
+  stroke: rgba(167, 139, 250, 0.55);
+  stroke-width: 1.5;
+}
+
+.bp-flow-canvas .react-flow__edge.selected .react-flow__edge-path,
+.bp-flow-canvas .react-flow__edge:focus .react-flow__edge-path,
+.bp-flow-canvas .react-flow__edge:hover .react-flow__edge-path {
+  stroke: #a78bfa;
+  stroke-width: 2;
+}
+
+.bp-flow-canvas .bp-flow-edge--setup .react-flow__edge-path {
+  stroke: rgba(167, 139, 250, 0.38);
+  stroke-dasharray: 4 4;
+}
+
+.bp-flow-canvas .bp-flow-edge--attach .react-flow__edge-path {
+  stroke: rgba(167, 139, 250, 0.7);
+}
+
+.bp-flow-canvas .bp-flow-edge--cash-in .react-flow__edge-path,
+.bp-flow-canvas .bp-flow-edge--cash-out .react-flow__edge-path {
+  stroke: #ff5a3d;
+  stroke-dasharray: 6 4;
+}
+
+.bp-flow-canvas .react-flow__handle {
+  width: 9px;
+  height: 9px;
+  background: #0d0c17;
+  border: 1.5px solid rgba(167, 139, 250, 0.55);
+  border-radius: 999px;
+}
+
+.bp-flow-canvas .react-flow__handle:hover {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.18);
+}
+
+.bp-flow-canvas .react-flow__handle-connecting {
+  border-color: #a78bfa;
+}
+
+.bp-flow-canvas .react-flow__handle-valid {
+  background: #a78bfa;
+}
+
+.bp-flow-canvas .react-flow__attribution {
+  display: none;
+}
+
+.bp-flow-canvas .react-flow__controls {
+  background: rgba(13, 12, 23, 0.6);
+  border: 1px solid rgba(167, 139, 250, 0.18);
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.bp-flow-canvas .react-flow__controls button {
+  background: transparent;
+  border-bottom: 1px solid rgba(167, 139, 250, 0.12);
+  color: #f3f0ff;
+}
+
+.bp-flow-canvas .react-flow__controls button:hover {
+  background: rgba(167, 139, 250, 0.14);
+}
+
+.bp-flow-canvas .react-flow__controls button:last-child {
+  border-bottom: 0;
+}
+
+.bp-flow-canvas .react-flow__minimap {
+  background: rgba(13, 12, 23, 0.6);
+  border: 1px solid rgba(167, 139, 250, 0.18);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* Custom nodes */
+
+.bp-flow-node {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 180px;
+  max-width: 220px;
+  padding: 0.65rem 0.75rem;
+  color: #f3f0ff;
+  background:
+    linear-gradient(180deg, var(--bp-node-bg, #1a1730) 0%, rgba(13, 12, 23, 0.95) 100%);
+  border: 1px solid color-mix(in srgb, var(--bp-node-accent, #a78bfa) 30%, rgba(255, 255, 255, 0.05));
+  border-radius: 14px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.03) inset,
+    0 8px 20px rgba(0, 0, 0, 0.35);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.bp-flow-node.is-selected {
+  border-color: var(--bp-node-accent, #a78bfa);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--bp-node-accent, #a78bfa) 22%, transparent),
+    0 12px 28px rgba(0, 0, 0, 0.5);
+}
+
+.bp-flow-node__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 0.45rem;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--bp-node-accent, #a78bfa);
+  background:
+    radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, var(--bp-node-accent, #a78bfa) 22%, transparent), transparent 65%),
+    rgba(13, 12, 23, 0.7);
+  border: 1px solid color-mix(in srgb, var(--bp-node-accent, #a78bfa) 38%, transparent);
+  border-radius: 10px;
+}
+
+.bp-flow-node__body {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.bp-flow-node__body strong {
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #f3f0ff;
+}
+
+.bp-flow-node__body small {
+  font-size: 0.66rem;
+  color: rgba(243, 240, 255, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bp-flow-node--ledger {
+  --bp-node-accent: #a78bfa;
+  --bp-node-bg: #1a1730;
+  min-width: 200px;
+  padding: 0.8rem 0.9rem;
+  background:
+    radial-gradient(140% 120% at 50% 0%, rgba(167, 139, 250, 0.18), transparent 70%),
+    linear-gradient(180deg, #1a1730 0%, #0d0c17 100%);
+  border: 1px solid rgba(167, 139, 250, 0.45);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 0 0 1px rgba(167, 139, 250, 0.15),
+    0 16px 30px rgba(13, 12, 23, 0.5);
+}
+
+.bp-flow-node--ledger.is-selected {
+  box-shadow:
+    0 0 0 4px rgba(167, 139, 250, 0.22),
+    0 18px 36px rgba(13, 12, 23, 0.55);
+}
+
+.bp-flow-toast {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.55rem 0.95rem;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: #fff7ed;
+  background: rgba(220, 38, 38, 0.9);
+  border: 1px solid rgba(255, 138, 92, 0.6);
+  border-radius: 10px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+  animation: bp-flow-toast-in 180ms ease forwards;
+  pointer-events: none;
+  z-index: 5;
+}
+
+@keyframes bp-flow-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* Mini preview on step 4 */
+
+.bp-flow-preview {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 0.4rem;
+}
+
+.bp-flow-preview__header strong {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5a5770;
+}
+
+.bp-flow-mini {
+  height: 200px;
+  background: #0d0c17;
+  border: 1px solid rgba(167, 139, 250, 0.18);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.bp-flow-mini .react-flow__edge-path {
+  stroke: rgba(167, 139, 250, 0.55);
+  stroke-width: 1.4;
+}
+
+.bp-flow-mini .react-flow__attribution {
+  display: none;
+}
+
+/* Responsive: stack palette under canvas on narrow screens */
+@media (max-width: 880px) {
+  .bp-flow-studio {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 600px;
+  }
+
+  .bp-flow-palette {
+    order: 2;
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: 0;
+    border-top: 1px solid rgba(167, 139, 250, 0.12);
+    padding: 0.6rem;
+    gap: 0.6rem;
+  }
+
+  .bp-flow-palette__header {
+    display: none;
+  }
+
+  .bp-flow-palette__categories {
+    display: flex;
+    gap: 0.6rem;
+  }
+
+  .bp-flow-palette__category {
+    min-width: 200px;
+  }
+
+  .bp-flow-canvas {
+    order: 1;
+    min-height: 380px;
   }
 }

@@ -14,6 +14,7 @@
     "@rspress/plugin-preview": "2.0.0-rc.3",
     "@rspress/plugin-sitemap": "2.0.0-rc.3",
     "@rstack-dev/doc-ui": "^1.12.2",
+    "@xyflow/react": "^12.10.2",
     "mermaid": "^11.12.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
