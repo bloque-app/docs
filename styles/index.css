@@ -1937,6 +1937,54 @@ p, li {
   color: #6d28d9;
 }
 
+/* Step 5 — Handoff
+   Below ~1200px the desktop 3-column nesting (copy | summary | prompt)
+   crushes the agent prompt. Collapse to a "summary dashboard" layout:
+   copy on top, three summary cards in a row, agent prompt full-width below. */
+@media (max-width: 1200px) {
+  .bp-screen--handoff {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: clamp(0.85rem, 1.6vw, 1.35rem);
+  }
+
+  .bp-screen--handoff .bp-screen__copy {
+    max-width: 720px;
+  }
+
+  .bp-screen--handoff .bp-screen__copy h2 {
+    max-width: 720px;
+    font-size: clamp(1.65rem, 3vw, 2.55rem);
+  }
+
+  .bp-screen--handoff .bp-screen__copy p {
+    max-width: 640px;
+  }
+
+  .bp-handoff {
+    grid-template-columns: 1fr;
+    gap: clamp(0.75rem, 1.2vw, 1rem);
+  }
+
+  .bp-handoff-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
+    align-items: stretch;
+    gap: 0.7rem;
+  }
+}
+
+/* Around tablet, drop summary to 2-up so each card has enough room. */
+@media (max-width: 880px) {
+  .bp-handoff-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bp-handoff-summary > div:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 920px) {
   .bp-shell {
     height: auto;
@@ -2028,8 +2076,12 @@ p, li {
   }
 
   .bp-agent-prompt__bar {
-    align-items: stretch;
+    align-items: flex-start;
     flex-direction: column;
+  }
+
+  .bp-agent-prompt__bar .bp-copy-button {
+    align-self: flex-start;
   }
 
   .bp-footer-links--desktop {
@@ -2076,6 +2128,14 @@ p, li {
 
   .bp-plugin-list {
     grid-template-columns: 1fr;
+  }
+
+  .bp-handoff-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .bp-handoff-summary > div:first-child {
+    grid-column: auto;
   }
 
   .bp-summary div {
