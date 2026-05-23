@@ -1562,6 +1562,13 @@ p, li {
   min-height: 0;
 }
 
+/* The walkthrough is the bottom row of the parent 2x2 grid and must span
+   both columns. Without this it gets placed at (row 2, col 1) only and the
+   right cell renders as dead space below the flow preview. */
+.bp-screen--walkthrough .bp-walkthrough {
+  grid-column: 1 / -1;
+}
+
 .bp-screen--walkthrough .bp-code-panel {
   order: -1;
 }
@@ -1937,6 +1944,32 @@ p, li {
   color: #6d28d9;
 }
 
+/* Step 4 — Walkthrough
+   Below ~1100px the inner walkthrough grid (code panel | nav panel) gives
+   the nav column under 300px and the code panel less than 600px, which
+   wraps long lines awkwardly. Collapse the inner grid to a single column
+   (code panel on top via order:-1, nav pills below) while the parent grid
+   keeps heading + flow preview side by side at the top. */
+@media (max-width: 1100px) {
+  .bp-walkthrough {
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+  }
+
+  /* At this width the nav pills can lay out in a row instead of stacking,
+     since they sit below a full-width code panel. */
+  .bp-walkthrough-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .bp-walkthrough-pill {
+    flex: 1 1 calc(50% - 0.5rem);
+    min-width: 200px;
+  }
+}
+
 /* Step 5 — Handoff
    Below ~1200px the desktop 3-column nesting (copy | summary | prompt)
    crushes the agent prompt. Collapse to a "summary dashboard" layout:
@@ -2017,8 +2050,18 @@ p, li {
     grid-template-columns: 1fr;
   }
 
+  /* At mobile, fall back to single-column stacking. The 1100px rule above
+     puts the nav in flex with wrapping pills; here we force a single
+     column so each pill takes a full row. */
   .bp-walkthrough-nav {
+    display: grid;
     grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .bp-walkthrough-pill {
+    flex: initial;
+    min-width: 0;
   }
 
   .bp-screen--studio {
